@@ -1,0 +1,52 @@
+import { NextResponse } from 'next/server'
+import { auth } from '@/auth'
+import { getUserMarketSettings, updateMarketSettings, type MarketSettingsPatch } from '@/lib/market/service'
+
+function parseSettingsPatch(body: unknown): MarketSettingsPatch | null {
+  if (!body || typeof body !== 'object') return null
+
+  const patch: MarketSettingsPatch = {}
+  const record = body as Record<string, unknown>
+
+  if (typeof record.showInMarket === 'boolean') patch.showInMarket = record.showInMarket
+  if (typeof record.publishOffers === 'boolean') patch.publishOffers = record.publishOffers
+  if (typeof record.publishWants === 'boolean') patch.publishWants = record.publishWants
+
+  return Object.keys(patch).length > 0 ? patch : null
+}
+
+export async function GET() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  try {
+    const settings = await getUserMarketSettings(session.user.id)
+    return NextResponse.json(settings)
+  } catch (error) {
+    console.error('Market settings error:', error)
+    return NextResponse.json({ error: 'No se pudieron cargar los ajustes' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: Request) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  try {
+    const patch = parseSettingsPatch(await request.json())
+    if (!patch) {
+      return NextResponse.json({ error: 'Parámetros inválidos' }, { status: 400 })
+    }
+
+    await updateMarketSettings(session.user.id, patch)
+    const settings = await getUserMarketSettings(session.user.id)
+    return NextResponse.json(settings)
+  } catch (error) {
+    console.error('Market settings update error:', error)
+    return NextResponse.json({ error: 'No se pudieron guardar los ajustes' }, { status: 500 })
+  }
+}

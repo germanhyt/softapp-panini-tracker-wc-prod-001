@@ -1,0 +1,71 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: panini_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-panini}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:-panini_tracker}
+    volumes:
+      - panini_pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5434:5432"
+    networks:
+      - app_shared_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-panini} -d ${POSTGRES_DB:-panini_tracker}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: panini_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-panini}:${POSTGRES_PASSWORD}@panini_db:5432/${POSTGRES_DB:-panini_tracker}?schema=public
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_shared_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  ws:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: panini_ws
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-panini}:${POSTGRES_PASSWORD}@panini_db:5432/${POSTGRES_DB:-panini_tracker}?schema=public
+      WS_PORT: "3002"
+    command: ["npx", "tsx", "server/chat-ws.ts"]
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_started
+    networks:
+      - app_shared_network
+
+volumes:
+  panini_pg_data:
+
+networks:
+  app_shared_network:
+    external: true

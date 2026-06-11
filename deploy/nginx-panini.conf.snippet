@@ -1,0 +1,59 @@
+# Snippet para /home/projects/shared/nginx.conf
+# Tras crear DNS, obtener certificado:
+#   docker compose -f /home/projects/shared/docker-compose.yml run --rm certbot certonly \
+#     --webroot -w /webroot -d panini.gcbprojects.site -d ws.panini.gcbprojects.site
+# Luego añadir estos bloques y: docker compose -f /home/projects/shared/docker-compose.yml exec nginx nginx -s reload
+
+# --- HTTP → HTTPS — Panini Tracker ---
+server {
+    listen 80;
+    server_name panini.gcbprojects.site ws.panini.gcbprojects.site;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /usr/share/nginx/html;
+        try_files $uri =404;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# --- HTTPS — Panini Tracker (Next.js) ---
+server {
+    listen 443 ssl http2;
+    server_name panini.gcbprojects.site;
+
+    ssl_certificate /etc/letsencrypt/live/panini.gcbprojects.site/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/panini.gcbprojects.site/privkey.pem;
+
+    location / {
+        proxy_pass http://panini_app:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# --- HTTPS — Panini Tracker (WebSocket chat) ---
+server {
+    listen 443 ssl http2;
+    server_name ws.panini.gcbprojects.site;
+
+    ssl_certificate /etc/letsencrypt/live/panini.gcbprojects.site/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/panini.gcbprojects.site/privkey.pem;
+
+    location / {
+        proxy_pass http://panini_ws:3002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400;
+    }
+}

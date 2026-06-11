@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.*
+!.env.production.example
+coverage
+*.md
+!README.md
+.cursor
+terminals
+agent-tools
+mcps
+.next/cache

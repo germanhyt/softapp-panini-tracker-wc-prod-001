@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Country {
+  code      String        @id @db.VarChar(8)
+  name      String
+  sortOrder Int           @map("sort_order")
+  profiles  UserProfile[]
+
+  @@map("countries")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  passwordHash  String?   @map("password_hash")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastLoginAt   DateTime? @map("last_login_at")
+
+  profile        UserProfile?
+  stickers       UserSticker[]
+  marketListings MarketListing[]
+  chatParticipants ChatParticipant[]
+  chatMessages   ChatMessage[]
+  accounts       Account[]
+  sessions       Session[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  userId             String    @id @map("user_id")
+  name               String    @default("")
+  surname            String    @default("")
+  countryCode        String?   @map("country_code") @db.VarChar(8)
+  photoUrl           String?   @map("photo_url")
+  photoSource        String    @default("none") @map("photo_source")
+  provider           String    @default("password")
+  isAdmin            Boolean   @default(false) @map("is_admin")
+  showInMarket       Boolean   @default(false) @map("show_in_market")
+  publishOffers      Boolean   @default(false) @map("publish_offers")
+  publishWants       Boolean   @default(false) @map("publish_wants")
+  profileCompletedAt DateTime? @map("profile_completed_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country Country? @relation(fields: [countryCode], references: [code])
+
+  @@index([countryCode])
+  @@map("user_profiles")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Sticker {
+  code       String  @id @db.VarChar(16)
+  teamCode   String? @map("team_code") @db.VarChar(8)
+  type       String  @db.VarChar(16)
+  sortOrder  Int     @map("sort_order")
+  isStandard Boolean @default(true) @map("is_standard")
+
+  userStickers   UserSticker[]
+  marketListings MarketListing[]
+
+  @@index([teamCode])
+  @@index([sortOrder])
+  @@map("stickers")
+}
+
+model MarketListing {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  stickerCode String   @map("sticker_code") @db.VarChar(16)
+  listingType String   @map("listing_type") @db.VarChar(8)
+  quantity    Int      @default(1)
+  note        String?  @db.VarChar(200)
+  isActive    Boolean  @default(true) @map("is_active")
+  publishedAt DateTime @default(now()) @map("published_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sticker Sticker @relation(fields: [stickerCode], references: [code])
+
+  @@unique([userId, stickerCode, listingType])
+  @@index([listingType, isActive])
+  @@index([stickerCode, isActive])
+  @@index([userId, isActive])
+  @@map("market_listings")
+}
+
+model UserSticker {
+  userId      String    @map("user_id")
+  stickerCode String    @map("sticker_code") @db.VarChar(16)
+  owned       Boolean   @default(false)
+  duplicates  Int       @default(0)
+  savedAt     DateTime? @map("saved_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sticker Sticker @relation(fields: [stickerCode], references: [code])
+
+  @@id([userId, stickerCode])
+  @@index([userId, owned])
+  @@index([userId, duplicates])
+  @@map("user_stickers")
+}
+
+model ChatConversation {
+  id            String   @id @default(cuid())
+  lastMessageAt DateTime? @map("last_message_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+
+  @@index([lastMessageAt])
+  @@map("chat_conversations")
+}
+
+model ChatParticipant {
+  conversationId String    @map("conversation_id")
+  userId         String    @map("user_id")
+  lastReadAt     DateTime? @map("last_read_at")
+  joinedAt       DateTime  @default(now()) @map("joined_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("chat_participants")
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String   @map("conversation_id")
+  senderId       String   @map("sender_id")
+  body           String   @db.VarChar(2000)
+  clientId       String?  @map("client_id") @db.VarChar(64)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User             @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, clientId])
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("chat_messages")
+}
