@@ -114,24 +114,20 @@ export const { handlers, auth, signIn, signOut } = initAuth({
     async jwt({
       token,
       user,
-      trigger,
     }: {
       token: JWT
       user?: { id?: string }
-      trigger?: 'update'
     }) {
       const userId = user?.id || token.sub
       if (!userId) return token
 
-      if (user || trigger === 'update') {
-        const dbUser = await loadSessionUser(userId)
-        if (dbUser) {
-          token.sub = dbUser.id
-          token.emailVerified = dbUser.emailVerified
-          token.profileComplete = dbUser.profileComplete
-          token.isAdmin = dbUser.isAdmin
-          token.name = dbUser.displayName
-        }
+      const dbUser = await loadSessionUser(userId)
+      if (dbUser) {
+        token.sub = dbUser.id
+        token.emailVerified = dbUser.emailVerified
+        token.profileComplete = dbUser.profileComplete
+        token.isAdmin = dbUser.isAdmin
+        token.name = dbUser.displayName
       }
 
       return token

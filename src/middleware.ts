@@ -1,12 +1,13 @@
 import NextAuth from 'next-auth'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import type { Session } from 'next-auth'
 import { authConfig } from '@/auth.config'
 
 const initAuth = NextAuth as (config: object) => {
   auth: (
-    handler: (req: { auth: Session | null; nextUrl: URL; url: string }) => Response | NextResponse | void,
-  ) => (req: Request) => Promise<Response>
+    handler: (req: NextRequest & { auth: Session | null }) => Response | NextResponse | void,
+  ) => (req: NextRequest) => Promise<Response>
 }
 
 const { auth } = initAuth(authConfig)
@@ -16,6 +17,12 @@ const appRoutes = ['/dashboard', '/album', '/matches', '/chat', '/profile', '/ad
 export default auth((req) => {
   const session = req.auth
   const { pathname } = req.nextUrl
+  const isServerAction = req.headers.has('next-action')
+
+  if (isServerAction) {
+    return NextResponse.next()
+  }
+
   const isAuthPage =
     pathname === '/login' ||
     pathname === '/register' ||
@@ -31,7 +38,7 @@ export default auth((req) => {
     return NextResponse.next()
   }
 
-  if (!session.user.emailVerified && pathname !== '/verify-email') {
+  if (!session.user.emailVerified && pathname !== '/verify-email' && pathname !== '/complete-profile') {
     return NextResponse.redirect(new URL('/verify-email', req.url))
   }
 

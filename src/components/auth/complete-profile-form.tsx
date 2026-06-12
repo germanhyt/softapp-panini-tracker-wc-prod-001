@@ -1,8 +1,7 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { completeProfileAction } from '@/app/actions/profile'
 import { APP_COUNTRY_CODE, getCountryName } from '@/lib/domain/countries'
 import {
@@ -14,17 +13,7 @@ import {
 
 export function CompleteProfileForm() {
   const [state, action, pending] = useActionState(completeProfileAction, {})
-  const { data: session, update } = useSession()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (state.success) {
-      update().then(() => {
-        router.push('/dashboard')
-        router.refresh()
-      })
-    }
-  }, [state.success, update, router])
+  const { data: session } = useSession()
 
   return (
     <AuthShell
