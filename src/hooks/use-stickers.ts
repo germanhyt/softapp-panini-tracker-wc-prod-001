@@ -20,6 +20,9 @@ type UseStickersResult = {
   lastSaved: number | null
   saving: boolean
   updateStickerLocal: (code: string, updates: Partial<StickerState>) => void
+  markMissingAsOwned: (codes: string[]) => string[]
+  unmarkUnlockedOwned: (codes: string[]) => string[]
+  clearAllSavedOwned: (codes: string[]) => Promise<string[]>
   saveStickersByCodes: (codes: string[]) => Promise<boolean>
   saveToCloud: () => Promise<boolean>
   deleteSavedSticker: (code: string) => Promise<boolean>
@@ -98,6 +101,82 @@ export function useStickers(): UseStickersResult {
     [savedStickers],
   )
 
+  const markMissingAsOwned = useCallback(
+    (codes: string[]) => {
+      const normalizedCodes = Array.from(
+        new Set(codes.map((code) => normalizeStickerCode(code)).filter(Boolean)),
+      )
+
+      const codesToMark = normalizedCodes.filter((code) => {
+        if (isStickerLocked(code)) return false
+        return !normalizeStickerState(stickers[code]).owned
+      })
+
+      if (codesToMark.length === 0) return []
+
+      const nextStickers: StickerMap = { ...stickers }
+      codesToMark.forEach((code) => {
+        nextStickers[code] = applyStickerPatch(normalizeStickerState(stickers[code]), { owned: true })
+      })
+
+      setStickers(nextStickers)
+      setPendingChanges((prevPending) => {
+        const nextPending = { ...prevPending }
+        codesToMark.forEach((code) => {
+          const nextSticker = nextStickers[code]
+          const savedSticker = normalizeStickerState(savedStickers[code])
+          if (stickersAreEqual(nextSticker, savedSticker)) {
+            delete nextPending[code]
+          } else {
+            nextPending[code] = true
+          }
+        })
+        return nextPending
+      })
+
+      return codesToMark
+    },
+    [isStickerLocked, savedStickers, stickers],
+  )
+
+  const unmarkUnlockedOwned = useCallback(
+    (codes: string[]) => {
+      const normalizedCodes = Array.from(
+        new Set(codes.map((code) => normalizeStickerCode(code)).filter(Boolean)),
+      )
+
+      const codesToUnmark = normalizedCodes.filter((code) => {
+        if (isStickerLocked(code)) return false
+        return normalizeStickerState(stickers[code]).owned
+      })
+
+      if (codesToUnmark.length === 0) return []
+
+      const nextStickers: StickerMap = { ...stickers }
+      codesToUnmark.forEach((code) => {
+        nextStickers[code] = applyStickerPatch(normalizeStickerState(stickers[code]), { owned: false })
+      })
+
+      setStickers(nextStickers)
+      setPendingChanges((prevPending) => {
+        const nextPending = { ...prevPending }
+        codesToUnmark.forEach((code) => {
+          const nextSticker = nextStickers[code]
+          const savedSticker = normalizeStickerState(savedStickers[code])
+          if (stickersAreEqual(nextSticker, savedSticker)) {
+            delete nextPending[code]
+          } else {
+            nextPending[code] = true
+          }
+        })
+        return nextPending
+      })
+
+      return codesToUnmark
+    },
+    [isStickerLocked, savedStickers, stickers],
+  )
+
   const persistPatches = useCallback(
     async (codes: string[]) => {
       const normalizedCodes = Array.from(
@@ -165,6 +244,59 @@ export function useStickers(): UseStickersResult {
     [pendingChanges, persistPatches],
   )
 
+  const clearAllSavedOwned = useCallback(
+    async (codes: string[]) => {
+      const normalizedCodes = Array.from(
+        new Set(codes.map((code) => normalizeStickerCode(code)).filter(Boolean)),
+      )
+      const codesToClear = normalizedCodes.filter((code) => isStickerLocked(code))
+
+      if (codesToClear.length === 0) return []
+
+      setSaving(true)
+      setError(null)
+
+      try {
+        const response = await fetch('/api/stickers/me/clear-saved', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codes: codesToClear }),
+        })
+
+        if (!response.ok) {
+          throw new Error('No se pudieron desmarcar las figuritas guardadas')
+        }
+
+        const data = await response.json()
+        const saved = mergeSavedStickers(data.saved || {})
+        const clearedCodes: string[] = Array.isArray(data.clearedCodes) ? data.clearedCodes : codesToClear
+        const removed = { owned: false, duplicates: 0 }
+
+        setSavedStickers(saved)
+        setStickers((prev) => {
+          const next = { ...prev }
+          clearedCodes.forEach((code) => {
+            next[code] = removed
+          })
+          return next
+        })
+        setPendingChanges((prev) => {
+          const next = { ...prev }
+          clearedCodes.forEach((code) => delete next[code])
+          return next
+        })
+        setLastSaved(Date.now())
+        return clearedCodes
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al desmarcar guardadas')
+        return []
+      } finally {
+        setSaving(false)
+      }
+    },
+    [isStickerLocked],
+  )
+
   const deleteSavedSticker = useCallback(async (code: string) => {
     const normalizedCode = normalizeStickerCode(code)
     if (!normalizedCode) return false
@@ -212,6 +344,9 @@ export function useStickers(): UseStickersResult {
       lastSaved,
       saving,
       updateStickerLocal,
+      markMissingAsOwned,
+      unmarkUnlockedOwned,
+      clearAllSavedOwned,
       saveStickersByCodes,
       saveToCloud,
       deleteSavedSticker,
@@ -227,6 +362,9 @@ export function useStickers(): UseStickersResult {
       lastSaved,
       saving,
       updateStickerLocal,
+      markMissingAsOwned,
+      unmarkUnlockedOwned,
+      clearAllSavedOwned,
       saveStickersByCodes,
       saveToCloud,
       deleteSavedSticker,

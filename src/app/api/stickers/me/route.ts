@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
+import { syncMarketListingsIfPublishing } from '@/lib/market/service'
 import {
   getUserSavedStickerMap,
   saveUserStickerPatches,
@@ -49,6 +50,10 @@ export async function PATCH(request: Request) {
     }
 
     await saveUserStickerPatches(session.user.id, validPatches)
+    await syncMarketListingsIfPublishing(
+      session.user.id,
+      validPatches.map((patch) => patch.code),
+    )
 
     const updated = await getUserSavedStickerMap(session.user.id)
     return NextResponse.json({ saved: updated })

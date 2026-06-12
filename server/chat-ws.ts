@@ -1,3 +1,4 @@
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import { prisma } from '../src/lib/db/prisma'
 import {
@@ -7,10 +8,12 @@ import {
 } from '../src/lib/chat/service'
 import { verifyChatWsToken } from '../src/lib/chat/ws-token'
 
-type ClientSocket = WebSocket & { userId?: string; isAlive?: boolean }
+type ClientSocket = WebSocket & { userId?: string; isAlive?: boolean; marketSubscribed?: boolean }
 
-type IncomingMessage =
+type WsClientMessage =
   | { type: 'auth'; token: string }
+  | { type: 'market_subscribe' }
+  | { type: 'market_unsubscribe' }
   | { type: 'join'; conversationId: string }
   | { type: 'leave'; conversationId: string }
   | { type: 'message'; conversationId: string; body: string; clientId?: string }
@@ -23,8 +26,11 @@ type SocketMeta = {
 }
 
 const port = Number(process.env.WS_PORT || 3002)
+const notifySecret = process.env.WS_NOTIFY_SECRET
+
 const sockets = new Map<ClientSocket, SocketMeta>()
 const rooms = new Map<string, Set<ClientSocket>>()
+const marketPublicSockets = new Set<ClientSocket>()
 
 function sendJson(socket: WebSocket, payload: unknown) {
   if (socket.readyState === WebSocket.OPEN) {
@@ -46,11 +52,7 @@ function removeFromRoom(conversationId: string, socket: ClientSocket) {
   }
 }
 
-function broadcastToRoom(
-  conversationId: string,
-  payload: unknown,
-  exclude?: ClientSocket,
-) {
+function broadcastToRoom(conversationId: string, payload: unknown, exclude?: ClientSocket) {
   const room = rooms.get(conversationId)
   if (!room) return
 
@@ -61,7 +63,52 @@ function broadcastToRoom(
   })
 }
 
-const wss = new WebSocketServer({ port })
+function subscribeMarket(socket: ClientSocket) {
+  marketPublicSockets.add(socket)
+  socket.marketSubscribed = true
+  sendJson(socket, { type: 'market_subscribed', at: new Date().toISOString() })
+}
+
+function unsubscribeMarket(socket: ClientSocket) {
+  marketPublicSockets.delete(socket)
+  socket.marketSubscribed = false
+}
+
+export function broadcastMarketRefresh() {
+  const payload = {
+    type: 'market_refresh',
+    at: new Date().toISOString(),
+  }
+
+  marketPublicSockets.forEach((socket) => {
+    sendJson(socket, payload)
+  })
+}
+
+function handleNotifyRequest(req: IncomingMessage, res: ServerResponse) {
+  if (req.method !== 'POST' || req.url !== '/internal/market-changed') {
+    res.writeHead(404)
+    res.end('Not found')
+    return
+  }
+
+  const secret = req.headers['x-ws-notify-secret']
+  if (!notifySecret || secret !== notifySecret) {
+    res.writeHead(401)
+    res.end('Unauthorized')
+    return
+  }
+
+  broadcastMarketRefresh()
+  res.writeHead(204)
+  res.end()
+}
+
+const httpServer = createServer((req, res) => {
+  handleNotifyRequest(req, res)
+})
+
+const wss = new WebSocketServer({ server: httpServer })
 
 wss.on('connection', (socket: ClientSocket) => {
   socket.isAlive = true
@@ -71,11 +118,22 @@ wss.on('connection', (socket: ClientSocket) => {
   })
 
   socket.on('message', async (raw) => {
-    let data: IncomingMessage
+    let data: WsClientMessage
     try {
-      data = JSON.parse(raw.toString()) as IncomingMessage
+      data = JSON.parse(raw.toString()) as WsClientMessage
     } catch {
       sendJson(socket, { type: 'error', message: 'Mensaje inválido' })
+      return
+    }
+
+    if (data.type === 'market_subscribe') {
+      subscribeMarket(socket)
+      return
+    }
+
+    if (data.type === 'market_unsubscribe') {
+      unsubscribeMarket(socket)
+      sendJson(socket, { type: 'market_unsubscribed' })
       return
     }
 
@@ -123,11 +181,15 @@ wss.on('connection', (socket: ClientSocket) => {
       const allowed = await userCanAccessConversation(meta.userId, data.conversationId)
       if (!allowed) return
       await markConversationRead(meta.userId, data.conversationId)
-      broadcastToRoom(data.conversationId, {
-        type: 'read',
-        conversationId: data.conversationId,
-        userId: meta.userId,
-      }, socket)
+      broadcastToRoom(
+        data.conversationId,
+        {
+          type: 'read',
+          conversationId: data.conversationId,
+          userId: meta.userId,
+        },
+        socket,
+      )
       return
     }
 
@@ -171,6 +233,7 @@ wss.on('connection', (socket: ClientSocket) => {
   })
 
   socket.on('close', () => {
+    unsubscribeMarket(socket)
     const meta = sockets.get(socket)
     if (meta) {
       meta.conversationIds.forEach((conversationId) => removeFromRoom(conversationId, socket))
@@ -191,9 +254,13 @@ const heartbeat = setInterval(() => {
   })
 }, 30000)
 
-wss.on('close', () => {
-  clearInterval(heartbeat)
-  void prisma.$disconnect()
+httpServer.listen(port, () => {
+  console.log(`Realtime WS en puerto ${port} (chat + mercado público)`)
 })
 
-console.log(`Chat WebSocket escuchando en ws://localhost:${port}`)
+process.on('SIGTERM', () => {
+  clearInterval(heartbeat)
+  wss.close()
+  httpServer.close()
+  void prisma.$disconnect()
+})

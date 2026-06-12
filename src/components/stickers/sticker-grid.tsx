@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import type { StickerState } from '@/lib/domain/sticker-rules'
+import { confirmDialog } from '@/lib/ui/sweetalert'
 
 type GridSticker = {
   code: string
@@ -18,29 +18,36 @@ type StickerGridProps = {
 }
 
 export function StickerGrid({ stickers, onUpdate, onDeleteSaved }: StickerGridProps) {
-  const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
-
-  const handleToggleOwned = (code: string, currentOwned: boolean, locked: boolean) => {
+  const handleToggleOwned = async (code: string, currentOwned: boolean, locked: boolean) => {
     if (locked && currentOwned) {
-      setDeleteCandidate((prev) => (prev === code ? null : code))
+      const confirmed = await confirmDialog({
+        title: '¿Desmarcar figurita guardada?',
+        html: `Se quitará <strong>${code}</strong> de tu álbum en la nube, incluidas sus repetidas.<br><br>Esta acción no se puede deshacer desde aquí.`,
+        confirmText: 'Sí, desmarcar',
+        icon: 'warning',
+      })
+      if (!confirmed || !onDeleteSaved) return
+      await onDeleteSaved(code)
       return
     }
 
-    setDeleteCandidate(null)
-    onUpdate(code, { owned: !currentOwned })
+    if (currentOwned) {
+      const confirmed = await confirmDialog({
+        title: '¿Desmarcar figurita?',
+        html: `Se quitará la marca de <strong>${code}</strong>. Aún no está guardada en tu cuenta.`,
+        confirmText: 'Sí, desmarcar',
+        icon: 'warning',
+      })
+      if (!confirmed) return
+      onUpdate(code, { owned: false })
+      return
+    }
+
+    onUpdate(code, { owned: true })
   }
 
   const handleDuplicateChange = (code: string, currentDup: number, delta: number) => {
     onUpdate(code, { duplicates: Math.max(0, currentDup + delta) })
-  }
-
-  const confirmDelete = async (code: string) => {
-    if (!onDeleteSaved) return
-    setDeleting(true)
-    const ok = await onDeleteSaved(code)
-    setDeleting(false)
-    if (ok) setDeleteCandidate(null)
   }
 
   return (
@@ -49,57 +56,47 @@ export function StickerGrid({ stickers, onUpdate, onDeleteSaved }: StickerGridPr
         <div
           key={code}
           className={`sticker-item ${owned ? 'owned' : ''} ${locked ? 'locked' : ''} ${pending ? 'pending' : ''}`.trim()}
+          role="button"
+          tabIndex={0}
+          onClick={() => void handleToggleOwned(code, owned, locked)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              void handleToggleOwned(code, owned, locked)
+            }
+          }}
+          title={
+            locked
+              ? 'Ya guardada. Toca para eliminar de tu cuenta.'
+              : owned
+                ? 'Desmarcar (aún no guardada)'
+                : 'Marcar como pegada'
+          }
         >
           <span className="code">{code}</span>
-          <div
-            className="checkbox"
-            onClick={() => handleToggleOwned(code, owned, locked)}
-            title={
-              locked
-                ? 'Ya fue guardada. Toca para eliminar con confirmación.'
-                : owned
-                  ? 'Quitar antes de guardar'
-                  : 'Marcar como pegada'
-            }
-          >
+          <div className="checkbox" aria-hidden="true">
             {owned ? '✓' : ''}
           </div>
           {pending && <span className="pending-chip">Pendiente</span>}
 
           {owned && (
-            <div className="dup-controls">
+            <div className="dup-controls" onClick={(event) => event.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => handleDuplicateChange(code, duplicates, -1)}
                 disabled={duplicates <= 0}
+                aria-label={`Quitar repetida de ${code}`}
               >
                 -
               </button>
               <span className="dup-count">{duplicates}</span>
-              <button type="button" onClick={() => handleDuplicateChange(code, duplicates, 1)}>
+              <button
+                type="button"
+                onClick={() => handleDuplicateChange(code, duplicates, 1)}
+                aria-label={`Agregar repetida de ${code}`}
+              >
                 +
               </button>
-            </div>
-          )}
-
-          {!owned && <div style={{ height: 28, marginTop: 6 }} />}
-
-          {deleteCandidate === code && locked && owned && onDeleteSaved && (
-            <div className="delete-sticker-box">
-              <p>¿Eliminar {code} de tu álbum guardado?</p>
-              <div className="delete-sticker-actions">
-                <button type="button" className="btn-secondary" onClick={() => setDeleteCandidate(null)}>
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  disabled={deleting}
-                  onClick={() => confirmDelete(code)}
-                >
-                  {deleting ? 'Eliminando...' : 'Eliminar'}
-                </button>
-              </div>
             </div>
           )}
         </div>

@@ -4,7 +4,7 @@ import { useActionState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { completeProfileAction } from '@/app/actions/profile'
-import { COUNTRIES } from '@/lib/domain/countries'
+import { APP_COUNTRY_CODE, getCountryName } from '@/lib/domain/countries'
 import {
   AuthField,
   AuthMessage,
@@ -29,7 +29,7 @@ export function CompleteProfileForm() {
   return (
     <AuthShell
       title="Completa tu perfil"
-      subtitle="Necesitamos tu nombre y país para personalizar matches"
+      subtitle="Necesitamos tu nombre para personalizar matches en Perú"
     >
       {state.error && <AuthMessage tone="error">{state.error}</AuthMessage>}
 
@@ -51,13 +51,11 @@ export function CompleteProfileForm() {
           />
         </AuthField>
         <AuthField label="País">
-          <select className={authInputClassName()} name="countryCode" defaultValue="PE" required>
-            {COUNTRIES.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name}
-              </option>
-            ))}
-          </select>
+          <input type="hidden" name="countryCode" value={APP_COUNTRY_CODE} />
+          <p className="auth-country-fixed">{getCountryName(APP_COUNTRY_CODE)}</p>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Esta aplicación está orientada solo para coleccionistas en Perú.
+          </p>
         </AuthField>
         <button type="submit" className="btn-primary w-full" disabled={pending}>
           {pending ? 'Guardando...' : 'Continuar al dashboard'}

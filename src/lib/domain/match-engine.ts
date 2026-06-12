@@ -1,3 +1,4 @@
+import { MEETING_POINT } from '@/lib/brand'
 import { allStickersOrdered } from '@/lib/domain/catalog'
 import { normalizeStickerState, type StickerState } from '@/lib/domain/sticker-rules'
 
@@ -87,6 +88,9 @@ Y me gustaría intercambiar por estas figuras que tú tienes repetidas:
 ${input.myRequest.join(', ')}
 
 Podemos coordinar por este correo si te parece bien.
+
+Punto de encuentro sugerido: ${MEETING_POINT.label}
+${MEETING_POINT.policyNote}
 
 Saludos.`
 }

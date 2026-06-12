@@ -3,39 +3,17 @@ export type Country = {
   name: string
 }
 
-export const COUNTRIES: Country[] = [
-  { code: 'PE', name: 'Perú' },
-  { code: 'MX', name: 'México' },
-  { code: 'AR', name: 'Argentina' },
-  { code: 'BO', name: 'Bolivia' },
-  { code: 'BR', name: 'Brasil' },
-  { code: 'CL', name: 'Chile' },
-  { code: 'CO', name: 'Colombia' },
-  { code: 'CR', name: 'Costa Rica' },
-  { code: 'CU', name: 'Cuba' },
-  { code: 'DO', name: 'República Dominicana' },
-  { code: 'EC', name: 'Ecuador' },
-  { code: 'SV', name: 'El Salvador' },
-  { code: 'GT', name: 'Guatemala' },
-  { code: 'HN', name: 'Honduras' },
-  { code: 'NI', name: 'Nicaragua' },
-  { code: 'PA', name: 'Panamá' },
-  { code: 'PY', name: 'Paraguay' },
-  { code: 'UY', name: 'Uruguay' },
-  { code: 'VE', name: 'Venezuela' },
-  { code: 'US', name: 'Estados Unidos' },
-  { code: 'CA', name: 'Canadá' },
-  { code: 'ES', name: 'España' },
-  { code: 'GB', name: 'Reino Unido' },
-  { code: 'DE', name: 'Alemania' },
-  { code: 'FR', name: 'Francia' },
-  { code: 'IT', name: 'Italia' },
-  { code: 'PT', name: 'Portugal' },
-  { code: 'OTHER', name: 'Otro país' },
-]
+/** Aplicación orientada exclusivamente a coleccionistas en Perú. */
+export const APP_COUNTRY_CODE = 'PE' as const
+
+export const COUNTRIES: Country[] = [{ code: APP_COUNTRY_CODE, name: 'Perú' }]
 
 export const COUNTRY_BY_CODE = new Map(COUNTRIES.map((country) => [country.code, country]))
 
 export function getCountryName(code: string): string {
   return COUNTRY_BY_CODE.get(String(code || '').toUpperCase())?.name ?? ''
+}
+
+export function isAppCountryCode(code: string): boolean {
+  return String(code || '').trim().toUpperCase() === APP_COUNTRY_CODE
 }

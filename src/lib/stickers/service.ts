@@ -120,6 +120,43 @@ export async function deleteSavedSticker(userId: string, code: string): Promise<
   })
 }
 
+export async function clearSavedStickersBulk(
+  userId: string,
+  codes: string[],
+  saved: Record<string, StickerState>,
+): Promise<string[]> {
+  const normalizedCodes = Array.from(
+    new Set(
+      codes
+        .map((code) => normalizeStickerCode(code))
+        .filter((code) => code && STANDARD_CODE_SET.has(code) && saved[code]?.owned),
+    ),
+  )
+
+  if (normalizedCodes.length === 0) return []
+
+  const now = new Date()
+  await prisma.$transaction(
+    normalizedCodes.map((code) =>
+      prisma.userSticker.update({
+        where: {
+          userId_stickerCode: {
+            userId,
+            stickerCode: code,
+          },
+        },
+        data: {
+          owned: false,
+          duplicates: 0,
+          savedAt: now,
+        },
+      }),
+    ),
+  )
+
+  return normalizedCodes
+}
+
 export function validateStickerPatches(
   patches: StickerPatch[],
   saved: Record<string, StickerState>,

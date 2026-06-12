@@ -41,6 +41,7 @@ cd ${REMOTE_DIR}
 if [ ! -f .env ]; then
   PG_PASS=\$(openssl rand -hex 16)
   AUTH=\$(openssl rand -base64 32 | tr -d '\n')
+  NOTIFY=\$(openssl rand -hex 24)
   cat > .env <<ENV
 # Generado automáticamente — completa ADMIN_EMAILS, RESEND, etc.
 POSTGRES_USER=panini
@@ -56,6 +57,8 @@ AUTH_GOOGLE_ID=
 AUTH_GOOGLE_SECRET=
 WS_PORT=3002
 NEXT_PUBLIC_WS_URL=wss://ws.panini.gcbprojects.site
+WS_NOTIFY_URL=http://panini_ws:3002/internal/market-changed
+WS_NOTIFY_SECRET=\${NOTIFY}
 NODE_ENV=production
 ENV
   echo "Creado .env con POSTGRES_PASSWORD y AUTH_SECRET generados."
@@ -63,6 +66,18 @@ ENV
   echo "  nano ${REMOTE_DIR}/.env"
 else
   echo ".env ya existe — no se sobrescribe."
+  if ! grep -q '^WS_NOTIFY_SECRET=' .env 2>/dev/null; then
+    NOTIFY=\$(openssl rand -hex 24)
+    cat >> .env <<ENV
+
+WS_NOTIFY_URL=http://panini_ws:3002/internal/market-changed
+WS_NOTIFY_SECRET=\${NOTIFY}
+ENV
+    echo "Añadido WS_NOTIFY_SECRET al .env existente."
+  fi
+  if ! grep -q '^NEXT_PUBLIC_WS_URL=' .env 2>/dev/null; then
+    echo 'NEXT_PUBLIC_WS_URL=wss://ws.panini.gcbprojects.site' >> .env
+  fi
 fi
 EOF
 

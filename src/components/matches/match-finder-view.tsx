@@ -83,16 +83,16 @@ export function MatchFinderView({ countryCode, myDisplayName }: MatchFinderViewP
         <div className="matches-head">
           <div>
             <h2>🤝 Mejores matches</h2>
-            <p>Para mostrarte intercambios relevantes necesitamos conocer tu país.</p>
+            <p>Completa tu perfil para habilitar matches entre coleccionistas en Perú.</p>
           </div>
         </div>
 
         <div className="card empty-matches-card country-required-card">
           <p className="empty-icon">📍</p>
-          <h3>Selecciona tu país para habilitar matches</h3>
-          <p>Así evitamos mostrarte usuarios muy lejos de tu ubicación y priorizamos intercambios posibles.</p>
+          <h3>Completa tu perfil para habilitar matches</h3>
+          <p>La aplicación está orientada a coleccionistas en Perú. Termina tu registro para ver intercambios locales.</p>
           <Link href="/profile" className="btn-primary">
-            Completar país en mi perfil
+            Completar mi perfil
           </Link>
         </div>
       </div>
@@ -107,8 +107,7 @@ export function MatchFinderView({ countryCode, myDisplayName }: MatchFinderViewP
         <div>
           <h2>🤝 Mejores matches</h2>
           <p>
-            Ordenados por mayor cantidad de figuras intercambiables reales en{' '}
-            {getCountryName(activeCountry || '') || 'tu país'}.
+            Ordenados por mayor cantidad de figuras intercambiables entre coleccionistas en Perú.
           </p>
         </div>
         <button type="button" onClick={() => void loadMatches()} className="btn-refresh-matches">

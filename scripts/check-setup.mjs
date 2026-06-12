@@ -71,4 +71,41 @@ if (nextAuthUrl?.includes(':3000') && process.argv.includes('--port3001')) {
   console.log('   Usa NEXTAUTH_URL=http://localhost:3001')
 }
 
+const wsNotifyUrl = process.env.WS_NOTIFY_URL || fileEnv.WS_NOTIFY_URL
+const wsNotifySecret = process.env.WS_NOTIFY_SECRET || fileEnv.WS_NOTIFY_SECRET
+const wsPublicUrl = process.env.NEXT_PUBLIC_WS_URL || fileEnv.NEXT_PUBLIC_WS_URL
+
+console.log('\nMercado en vivo (WebSocket)')
+if (!wsNotifyUrl || !wsNotifySecret || !wsPublicUrl) {
+  console.log('⚠️  Faltan WS_NOTIFY_URL, WS_NOTIFY_SECRET o NEXT_PUBLIC_WS_URL en .env')
+  console.log('   El mercado no se actualizará al instante al guardar el álbum.')
+} else {
+  try {
+    const response = await fetch(wsNotifyUrl, {
+      method: 'POST',
+      headers: { 'x-ws-notify-secret': wsNotifySecret },
+    })
+    if (response.status === 204) {
+      console.log(`✅ Servidor WS alcanzable (${wsPublicUrl})`)
+      console.log('   Usa `yarn dev:all` en local para levantar Next.js + WebSocket juntos.')
+    } else if (response.status === 401) {
+      console.log('⚠️  Servidor WS responde pero WS_NOTIFY_SECRET no coincide')
+    } else {
+      console.log(`⚠️  Servidor WS respondió ${response.status} en ${wsNotifyUrl}`)
+    }
+  } catch (error) {
+    const refused =
+      error instanceof Error &&
+      (error.cause?.code === 'ECONNREFUSED' ||
+        error.cause?.errors?.some?.((entry) => entry.code === 'ECONNREFUSED'))
+    if (refused) {
+      console.log('❌ Servidor WebSocket no está corriendo (ECONNREFUSED)')
+      console.log('   Ejecuta en otra terminal: yarn dev:ws')
+      console.log('   O usa un solo comando: yarn dev:all')
+    } else {
+      console.log(`❌ No se pudo contactar al servidor WS: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+}
+
 console.log('\nOpcional: ADMIN_EMAILS, AUTH_GOOGLE_ID/SECRET (Google login), SMTP_* (correo real)')

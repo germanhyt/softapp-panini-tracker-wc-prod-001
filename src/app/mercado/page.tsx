@@ -4,7 +4,8 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Mercado de figuritas | Panini 2026 Tracker',
-  description: 'Mercado público de figuritas repetidas y faltantes del álbum Panini Mundial 2026',
+  description:
+    'Explora repetidas y faltantes publicadas por coleccionistas del álbum Panini Mundial 2026. Filtra por país, selección o código.',
 }
 
 export default async function MercadoPage() {

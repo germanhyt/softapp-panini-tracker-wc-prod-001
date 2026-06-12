@@ -22,7 +22,7 @@ export default async function MercadoLayout({ children }: { children: React.Reac
           <LoginQrTrigger initialLoginUrl={loginUrl} />
         </div>
       </header>
-      <main className="main-content public-main">{children}</main>
+      <main className="main-content public-main mercado-main">{children}</main>
       <SiteFooter />
     </div>
   )

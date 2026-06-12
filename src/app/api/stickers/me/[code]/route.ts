@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { syncMarketListingsIfPublishing } from '@/lib/market/service'
 import { deleteSavedSticker, getUserSavedStickerMap } from '@/lib/stickers/service'
 import { normalizeStickerCode } from '@/lib/domain/sticker-rules'
 import { STANDARD_CODE_SET } from '@/lib/domain/catalog'
@@ -27,6 +28,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   await deleteSavedSticker(session.user.id, normalizedCode)
+  await syncMarketListingsIfPublishing(session.user.id, [normalizedCode])
   const updated = await getUserSavedStickerMap(session.user.id)
 
   return NextResponse.json({ saved: updated })

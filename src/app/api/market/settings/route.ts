@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getUserMarketSettings, updateMarketSettings, type MarketSettingsPatch } from '@/lib/market/service'
+import { notifyMarketUpdated } from '@/lib/realtime/notify-market'
 
 function parseSettingsPatch(body: unknown): MarketSettingsPatch | null {
   if (!body || typeof body !== 'object') return null
@@ -44,6 +45,7 @@ export async function PATCH(request: Request) {
 
     await updateMarketSettings(session.user.id, patch)
     const settings = await getUserMarketSettings(session.user.id)
+    await notifyMarketUpdated()
     return NextResponse.json(settings)
   } catch (error) {
     console.error('Market settings update error:', error)

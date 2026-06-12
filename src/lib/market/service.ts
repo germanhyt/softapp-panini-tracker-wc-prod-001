@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/db/prisma'
-import { teams } from '@/lib/domain/catalog'
+import { STANDARD_CODE_SET, teams } from '@/lib/domain/catalog'
 import { getCountryName } from '@/lib/domain/countries'
 import { getDuplicateCodes, getMissingCodes } from '@/lib/domain/match-engine'
+import { notifyMarketUpdated } from '@/lib/realtime/notify-market'
 import { getUserSavedStickerMap } from '@/lib/stickers/service'
 
 export type ListingType = 'offer' | 'want'
@@ -249,6 +250,35 @@ export async function syncUserMarketListings(userId: string): Promise<{ offerCou
     offerCount: desiredOffers.length,
     wantCount: desiredWants.length,
   }
+}
+
+/** Sincroniza listados y notifica por WebSocket si el usuario ya publica en el mercado. */
+export async function syncMarketListingsIfPublishing(
+  userId: string,
+  changedCodes?: string[],
+): Promise<boolean> {
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId },
+    select: {
+      publishOffers: true,
+      publishWants: true,
+    },
+  })
+
+  if (!profile?.publishOffers && !profile?.publishWants) {
+    return false
+  }
+
+  if (changedCodes && changedCodes.length > 0) {
+    const affectsMarket = changedCodes.some((code) => STANDARD_CODE_SET.has(code))
+    if (!affectsMarket) {
+      return false
+    }
+  }
+
+  await syncUserMarketListings(userId)
+  await notifyMarketUpdated()
+  return true
 }
 
 export async function searchMarketListings(

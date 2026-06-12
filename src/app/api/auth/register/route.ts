@@ -12,6 +12,7 @@ import { registerEmailUser } from '@/lib/auth/session-user'
 import { normalizeEmail } from '@/lib/auth/users'
 import { getClientIp } from '@/lib/http/client-ip'
 import { logError } from '@/lib/observability/logger'
+import { APP_COUNTRY_CODE, isAppCountryCode } from '@/lib/domain/countries'
 
 const registerSchema = z.object({
   name: z.string().trim().min(1, 'Nombre requerido'),
@@ -52,7 +53,14 @@ export async function POST(request: Request) {
     })
     if (!emailLimit.allowed) return rateLimitResponse(emailLimit.retryAfterSec)
 
-    const country = await prisma.country.findUnique({ where: { code: countryCode } })
+    if (!isAppCountryCode(countryCode)) {
+      return NextResponse.json(
+        { error: 'Esta aplicación está disponible solo para coleccionistas en Perú' },
+        { status: 400 },
+      )
+    }
+
+    const country = await prisma.country.findUnique({ where: { code: APP_COUNTRY_CODE } })
     if (!country) {
       return NextResponse.json({ error: 'País no válido' }, { status: 400 })
     }
@@ -71,7 +79,7 @@ export async function POST(request: Request) {
       surname,
       email: normalizedEmail,
       passwordHash,
-      countryCode,
+      countryCode: APP_COUNTRY_CODE,
     })
 
     const token = await createEmailVerificationToken(normalizedEmail)

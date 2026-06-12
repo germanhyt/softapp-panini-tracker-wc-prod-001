@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { auth, signOut } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { isAdminEmail, isProfileComplete } from '@/lib/auth/users'
+import { APP_COUNTRY_CODE, isAppCountryCode } from '@/lib/domain/countries'
 
 export type CompleteProfileState = {
   error?: string
@@ -27,11 +28,13 @@ export async function completeProfileAction(
     return { error: 'Completa nombre y apellido' }
   }
 
-  if (!countryCode) {
-    return { error: 'Selecciona tu país para habilitar matches' }
+  const resolvedCountry = countryCode || APP_COUNTRY_CODE
+
+  if (!isAppCountryCode(resolvedCountry)) {
+    return { error: 'Esta aplicación está disponible solo para coleccionistas en Perú' }
   }
 
-  const country = await prisma.country.findUnique({ where: { code: countryCode } })
+  const country = await prisma.country.findUnique({ where: { code: APP_COUNTRY_CODE } })
   if (!country) {
     return { error: 'País no válido' }
   }
@@ -52,7 +55,7 @@ export async function completeProfileAction(
     update: {
       name,
       surname,
-      countryCode,
+      countryCode: APP_COUNTRY_CODE,
       isAdmin: admin,
       profileCompletedAt: new Date(),
     },
@@ -60,7 +63,7 @@ export async function completeProfileAction(
       userId: session.user.id,
       name,
       surname,
-      countryCode,
+      countryCode: APP_COUNTRY_CODE,
       isAdmin: admin,
       profileCompletedAt: new Date(),
       provider: 'google',

@@ -2,7 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { ChatTradeSuggestionPanel } from '@/components/chat/chat-trade-suggestion-panel'
 import { useChatSocket } from '@/hooks/use-chat-socket'
+import { MEETING_POINT } from '@/lib/brand'
+import { notifyChatUnreadChanged } from '@/hooks/use-chat-unread'
 
 type ChatThreadViewProps = {
   conversationId: string
@@ -26,6 +29,10 @@ export function ChatThreadView({ conversationId, otherUserName }: ChatThreadView
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, typingUserId])
+
+  useEffect(() => {
+    notifyChatUnreadChanged()
+  }, [messages.length])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -51,12 +58,23 @@ export function ChatThreadView({ conversationId, otherUserName }: ChatThreadView
         </Link>
         <div>
           <h2 className="chat-thread-title">{otherUserName}</h2>
-          <p className="muted-small">Chat interno privado</p>
           <p className="muted-small">
-            {connecting ? 'Conectando...' : connected ? 'En línea' : 'Reconectando...'}
+            Chat interno privado · {connecting ? 'Conectando...' : connected ? 'En línea' : 'Reconectando...'}
           </p>
         </div>
       </div>
+
+      <aside className="card chat-meeting-card">
+        <p className="chat-meeting-kicker">Punto de encuentro oficial</p>
+        <h3 className="chat-meeting-title">{MEETING_POINT.label}</h3>
+        <p className="chat-meeting-policy">{MEETING_POINT.policyNote}</p>
+      </aside>
+
+      <ChatTradeSuggestionPanel
+        conversationId={conversationId}
+        otherUserName={otherUserName}
+        onSuggest={(message) => setDraft(message)}
+      />
 
       <div className="chat-thread-messages card">
         {messages.length === 0 ? (

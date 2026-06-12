@@ -1,7 +1,8 @@
 import { auth } from '@/auth'
 import { loadSessionUser } from '@/lib/auth/session-user'
 import { MarketSettingsPanel } from '@/components/market/market-settings-panel'
-import { getCountryName } from '@/lib/domain/countries'
+import { MEETING_POINT } from '@/lib/brand'
+import { APP_COUNTRY_CODE, getCountryName } from '@/lib/domain/countries'
 import { computeStats, mergeSavedStickers } from '@/lib/domain/progress'
 import { getUserSavedStickerMap } from '@/lib/stickers/service'
 
@@ -18,7 +19,9 @@ export default async function ProfilePage() {
       <section className="card space-y-2">
         <h3 className="text-lg font-semibold">{user?.displayName}</h3>
         <p className="muted-small">{user?.email}</p>
-        {user?.countryCode && <p className="muted-small">📍 {getCountryName(user.countryCode)}</p>}
+        <p className="muted-small">📍 {getCountryName(user?.countryCode || APP_COUNTRY_CODE)}</p>
+        <p className="muted-small">Aplicación orientada solo para coleccionistas en Perú.</p>
+        <p className="muted-small">🤝 Punto de encuentro oficial: {MEETING_POINT.label}</p>
       </section>
 
       <section className="card space-y-2">

@@ -340,6 +340,11 @@ export async function sendChatMessage(input: {
   }
 }
 
+export async function getTotalUnreadCount(userId: string): Promise<number> {
+  const conversations = await listConversationsForUser(userId)
+  return conversations.reduce((total, conversation) => total + conversation.unreadCount, 0)
+}
+
 export async function getConversationPeer(userId: string, conversationId: string) {
   const allowed = await userCanAccessConversation(userId, conversationId)
   if (!allowed) return null

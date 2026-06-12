@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { auth } from '@/auth'
 import { signOutAction } from '@/app/actions/profile'
 import { BrandLogo } from '@/components/brand/brand-logo'
+import { ChatNotificationBell } from '@/components/chat/chat-notification-bell'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { SiteFooter } from '@/components/layout/site-footer'
 import { getRegisteredMemberCount } from '@/lib/matches/service'
@@ -25,6 +26,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           {memberCount > 0 && <p className="brand-members">{formattedMembers} miembros registrados</p>}
         </div>
         <div className="user-info">
+          <ChatNotificationBell />
           <Link href="/profile" className="header-profile-link" title="Ver mi perfil">
             <div className="header-avatar">
               {session?.user?.image ? (

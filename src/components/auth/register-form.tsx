@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { COUNTRIES } from '@/lib/domain/countries'
+import { APP_COUNTRY_CODE, getCountryName } from '@/lib/domain/countries'
 import {
   AuthField,
   AuthLink,
@@ -19,7 +19,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [countryCode, setCountryCode] = useState('PE')
+  const countryCode = APP_COUNTRY_CODE
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -91,18 +91,10 @@ export function RegisterForm() {
         </div>
 
         <AuthField label="País">
-          <select
-            className={authInputClassName()}
-            value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
-            required
-          >
-            {COUNTRIES.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name}
-              </option>
-            ))}
-          </select>
+          <p className="auth-country-fixed">{getCountryName(APP_COUNTRY_CODE)}</p>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Registro disponible solo para coleccionistas en Perú.
+          </p>
         </AuthField>
 
         <AuthField label="Correo">

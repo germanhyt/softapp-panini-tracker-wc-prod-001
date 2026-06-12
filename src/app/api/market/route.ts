@@ -7,6 +7,7 @@ import {
   type ListingType,
   type MarketSearchParams,
 } from '@/lib/market/service'
+import { notifyMarketUpdated } from '@/lib/realtime/notify-market'
 
 function parseSearchParams(url: URL): MarketSearchParams {
   const page = Number(url.searchParams.get('page') || '1')
@@ -47,6 +48,7 @@ export async function POST() {
   try {
     const result = await syncUserMarketListings(session.user.id)
     const settings = await getUserMarketSettings(session.user.id)
+    await notifyMarketUpdated()
     return NextResponse.json({
       success: true,
       ...result,

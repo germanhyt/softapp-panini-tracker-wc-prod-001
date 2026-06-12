@@ -4,6 +4,34 @@ import Link from 'next/link'
 import { buildSectionProgress, computeStats } from '@/lib/domain/progress'
 import { useStickers } from '@/hooks/use-stickers'
 
+const DASHBOARD_ACTIONS = [
+  {
+    href: '/album',
+    icon: '📖',
+    label: 'Ver álbum por páginas',
+    hint: 'Marca pegadas y repetidas',
+    primary: true,
+  },
+  {
+    href: '/visual-report',
+    icon: '🧾',
+    label: 'Reporte visual',
+    hint: 'Mapa de faltantes',
+  },
+  {
+    href: '/trade-report',
+    icon: '📋',
+    label: 'Reporte para trueque',
+    hint: 'Listo para imprimir',
+  },
+  {
+    href: '/mercado',
+    icon: '🏪',
+    label: 'Mercado público',
+    hint: 'Repetidas y faltantes',
+  },
+] as const
+
 export function DashboardView() {
   const { savedStickers, pendingChanges, saveToCloud, lastSaved, loading } = useStickers()
   const hasPendingChanges = Object.keys(pendingChanges).length > 0
@@ -43,25 +71,32 @@ export function DashboardView() {
         <div className="progress-bar-fill" style={{ width: `${percent}%` }} />
       </div>
 
-      <div className="card dashboard-actions">
-        <Link href="/album" className="btn-primary dashboard-link-button">
-          📖 Ver álbum por páginas
-        </Link>
-        <div className="dashboard-report-actions">
-          <Link href="/visual-report" className="btn-secondary dashboard-report-button">
-            🧾 Reporte visual de faltantes
-          </Link>
-          <Link href="/trade-report" className="btn-secondary dashboard-report-button">
-            📋 Reporte para trueque
-          </Link>
-          <Link href="/mercado" className="btn-secondary dashboard-report-button">
-            🏪 Mercado público
-          </Link>
+      <section className="card dashboard-actions">
+        <div className="dashboard-actions-header">
+          <h3>Acciones rápidas</h3>
+          <p className="muted-small">Gestiona tu álbum, imprime reportes o revisa el mercado comunitario.</p>
         </div>
-        <p className="muted-small">
-          Marca figuritas por página, guarda antes de cambiar de sección e imprime tus reportes para intercambios en persona.
-        </p>
-      </div>
+        <div className="dashboard-actions-grid">
+          {DASHBOARD_ACTIONS.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className={`dashboard-action-tile ${'primary' in action && action.primary ? 'is-primary' : ''}`}
+            >
+              <span className="dashboard-action-icon" aria-hidden="true">
+                {action.icon}
+              </span>
+              <span className="dashboard-action-copy">
+                <strong>{action.label}</strong>
+                <small>{action.hint}</small>
+              </span>
+              <span className="dashboard-action-arrow" aria-hidden="true">
+                →
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="card section-progress-panel">
         <div className="section-progress-header">

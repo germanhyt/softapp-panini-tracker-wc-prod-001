@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001 --webpack",
-    "dev:ws": "tsx server/chat-ws.ts",
+    "dev:ws": "tsx --env-file=.env server/chat-ws.ts",
+    "dev:all": "node scripts/dev-all.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -29,6 +30,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-qr-code": "^2.2.0",
+    "sweetalert2": "^11.26.25",
     "ws": "^8.21.0",
     "zod": "^4.4.3"
   },

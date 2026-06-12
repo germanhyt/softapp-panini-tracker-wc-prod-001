@@ -23,6 +23,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://ws.panini.gcbprojects.site}
     container_name: panini_app
     restart: unless-stopped
     env_file:
@@ -31,6 +33,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-panini}:${POSTGRES_PASSWORD}@panini_db:5432/${POSTGRES_DB:-panini_tracker}?schema=public
       PORT: "3000"
       HOSTNAME: "0.0.0.0"
+      WS_NOTIFY_URL: http://panini_ws:3002/internal/market-changed
+      WS_NOTIFY_SECRET: ${WS_NOTIFY_SECRET:?Define WS_NOTIFY_SECRET en .env}
     depends_on:
       db:
         condition: service_healthy
@@ -47,6 +51,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://ws.panini.gcbprojects.site}
     container_name: panini_ws
     restart: unless-stopped
     env_file:
@@ -54,6 +60,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-panini}:${POSTGRES_PASSWORD}@panini_db:5432/${POSTGRES_DB:-panini_tracker}?schema=public
       WS_PORT: "3002"
+      WS_NOTIFY_SECRET: ${WS_NOTIFY_SECRET:?Define WS_NOTIFY_SECRET en .env}
     command: ["npx", "tsx", "server/chat-ws.ts"]
     depends_on:
       db:
