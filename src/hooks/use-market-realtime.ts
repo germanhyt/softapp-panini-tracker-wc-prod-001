@@ -20,7 +20,7 @@ export function useMarketRealtime({ enabled = true, onRefresh }: UseMarketRealti
 
   useEffect(() => {
     if (!enabled) {
-      setLive(false)
+      queueMicrotask(() => setLive(false))
       return
     }
 
@@ -67,7 +67,7 @@ export function useMarketRealtime({ enabled = true, onRefresh }: UseMarketRealti
       closed = true
       if (reconnectTimer) window.clearTimeout(reconnectTimer)
       ws?.close()
-      setLive(false)
+      queueMicrotask(() => setLive(false))
     }
   }, [enabled])
 

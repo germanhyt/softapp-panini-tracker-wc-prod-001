@@ -2809,6 +2809,114 @@ select {
   font-size: 12px;
 }
 
+.market-selection-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.market-selection-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.market-selection-tab {
+  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.market-selection-tab.is-active {
+  border-color: rgba(212, 175, 55, 0.45);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.market-selection-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.market-selection-mode input {
+  margin-top: 3px;
+}
+
+.market-selection-hint {
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--border);
+}
+
+.market-selection-search {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.market-selection-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.market-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.market-selection-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.market-selection-item.is-selected {
+  border-color: rgba(132, 204, 22, 0.45);
+  background: rgba(132, 204, 22, 0.08);
+}
+
+.market-selection-code {
+  font-weight: 700;
+}
+
+.market-selection-qty {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.market-selection-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.market-selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .chat-page-intro {
   margin-bottom: 14px;
 }

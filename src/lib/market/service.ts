@@ -3,6 +3,7 @@ import { STANDARD_CODE_SET, teams } from '@/lib/domain/catalog'
 import { getCountryName } from '@/lib/domain/countries'
 import { getDuplicateCodes, getMissingCodes } from '@/lib/domain/match-engine'
 import { notifyMarketUpdated } from '@/lib/realtime/notify-market'
+import { filterCodesBySelection, pruneInvalidMarketSelections } from '@/lib/market/selection'
 import { getUserSavedStickerMap } from '@/lib/stickers/service'
 
 export type ListingType = 'offer' | 'want'
@@ -47,6 +48,8 @@ export type MarketUserSettings = {
   showInMarket: boolean
   publishOffers: boolean
   publishWants: boolean
+  selectiveOffers: boolean
+  selectiveWants: boolean
   offerCount: number
   wantCount: number
   lastSyncedAt: string | null
@@ -56,6 +59,8 @@ export type MarketSettingsPatch = {
   showInMarket?: boolean
   publishOffers?: boolean
   publishWants?: boolean
+  selectiveOffers?: boolean
+  selectiveWants?: boolean
 }
 
 const MAX_LIMIT = 48
@@ -76,6 +81,8 @@ export async function getUserMarketSettings(userId: string): Promise<MarketUserS
       showInMarket: true,
       publishOffers: true,
       publishWants: true,
+      selectiveOffers: true,
+      selectiveWants: true,
     },
   })
 
@@ -98,6 +105,8 @@ export async function getUserMarketSettings(userId: string): Promise<MarketUserS
     showInMarket: profile?.showInMarket ?? false,
     publishOffers: profile?.publishOffers ?? false,
     publishWants: profile?.publishWants ?? false,
+    selectiveOffers: profile?.selectiveOffers ?? false,
+    selectiveWants: profile?.selectiveWants ?? false,
     offerCount,
     wantCount,
     lastSyncedAt: latest?.updatedAt.toISOString() ?? null,
@@ -111,6 +120,8 @@ export async function updateMarketSettings(userId: string, patch: MarketSettings
       showInMarket: true,
       publishOffers: true,
       publishWants: true,
+      selectiveOffers: true,
+      selectiveWants: true,
     },
   })
 
@@ -120,6 +131,8 @@ export async function updateMarketSettings(userId: string, patch: MarketSettings
     showInMarket: patch.showInMarket ?? current.showInMarket,
     publishOffers: patch.publishOffers ?? current.publishOffers,
     publishWants: patch.publishWants ?? current.publishWants,
+    selectiveOffers: patch.selectiveOffers ?? current.selectiveOffers,
+    selectiveWants: patch.selectiveWants ?? current.selectiveWants,
   }
 
   await prisma.$transaction(async (tx) => {
@@ -150,6 +163,8 @@ export async function syncUserMarketListings(userId: string): Promise<{ offerCou
     select: {
       publishOffers: true,
       publishWants: true,
+      selectiveOffers: true,
+      selectiveWants: true,
     },
   })
 
@@ -160,9 +175,20 @@ export async function syncUserMarketListings(userId: string): Promise<{ offerCou
     return { offerCount: 0, wantCount: 0 }
   }
 
+  await pruneInvalidMarketSelections(userId)
+
   const saved = await getUserSavedStickerMap(userId)
-  const duplicateCodes = publishOffers ? getDuplicateCodes(saved) : []
-  const missingCodes = publishWants ? getMissingCodes(saved) : []
+  let duplicateCodes = publishOffers ? getDuplicateCodes(saved) : []
+  let missingCodes = publishWants ? getMissingCodes(saved) : []
+
+  if (publishOffers && profile?.selectiveOffers) {
+    duplicateCodes = await filterCodesBySelection(userId, 'offer', duplicateCodes, true)
+  }
+
+  if (publishWants && profile?.selectiveWants) {
+    missingCodes = await filterCodesBySelection(userId, 'want', missingCodes, true)
+  }
+
   const now = new Date()
 
   const desiredOffers = duplicateCodes.map((code) => ({

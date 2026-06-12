@@ -12,6 +12,8 @@ function parseSettingsPatch(body: unknown): MarketSettingsPatch | null {
   if (typeof record.showInMarket === 'boolean') patch.showInMarket = record.showInMarket
   if (typeof record.publishOffers === 'boolean') patch.publishOffers = record.publishOffers
   if (typeof record.publishWants === 'boolean') patch.publishWants = record.publishWants
+  if (typeof record.selectiveOffers === 'boolean') patch.selectiveOffers = record.selectiveOffers
+  if (typeof record.selectiveWants === 'boolean') patch.selectiveWants = record.selectiveWants
 
   return Object.keys(patch).length > 0 ? patch : null
 }

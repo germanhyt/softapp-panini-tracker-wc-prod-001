@@ -29,6 +29,7 @@ model User {
   profile        UserProfile?
   stickers       UserSticker[]
   marketListings MarketListing[]
+  marketPublishSelections MarketPublishSelection[]
   chatParticipants ChatParticipant[]
   chatMessages   ChatMessage[]
   accounts       Account[]
@@ -49,6 +50,8 @@ model UserProfile {
   showInMarket       Boolean   @default(false) @map("show_in_market")
   publishOffers      Boolean   @default(false) @map("publish_offers")
   publishWants       Boolean   @default(false) @map("publish_wants")
+  selectiveOffers    Boolean   @default(false) @map("selective_offers")
+  selectiveWants     Boolean   @default(false) @map("selective_wants")
   profileCompletedAt DateTime? @map("profile_completed_at")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
@@ -106,12 +109,26 @@ model Sticker {
   sortOrder  Int     @map("sort_order")
   isStandard Boolean @default(true) @map("is_standard")
 
-  userStickers   UserSticker[]
-  marketListings MarketListing[]
+  userStickers              UserSticker[]
+  marketListings            MarketListing[]
+  marketPublishSelections   MarketPublishSelection[]
 
   @@index([teamCode])
   @@index([sortOrder])
   @@map("stickers")
+}
+
+model MarketPublishSelection {
+  userId      String @map("user_id")
+  stickerCode String @map("sticker_code") @db.VarChar(16)
+  listingType String @map("listing_type") @db.VarChar(8)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sticker Sticker @relation(fields: [stickerCode], references: [code])
+
+  @@id([userId, stickerCode, listingType])
+  @@index([userId, listingType])
+  @@map("market_publish_selections")
 }
 
 model MarketListing {

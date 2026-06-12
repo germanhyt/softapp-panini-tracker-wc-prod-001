@@ -1,5 +1,6 @@
 import { auth } from '@/auth'
 import { loadSessionUser } from '@/lib/auth/session-user'
+import { MarketSelectionPanel } from '@/components/market/market-selection-panel'
 import { MarketSettingsPanel } from '@/components/market/market-settings-panel'
 import { MEETING_POINT } from '@/lib/brand'
 import { APP_COUNTRY_CODE, getCountryName } from '@/lib/domain/countries'
@@ -16,22 +17,25 @@ export default async function ProfilePage() {
     <div>
       <h2 className="page-title">👤 Mi perfil</h2>
 
-      <section className="card space-y-2">
-        <h3 className="text-lg font-semibold">{user?.displayName}</h3>
-        <p className="muted-small">{user?.email}</p>
-        <p className="muted-small">📍 {getCountryName(user?.countryCode || APP_COUNTRY_CODE)}</p>
-        <p className="muted-small">Aplicación orientada solo para coleccionistas en Perú.</p>
-        <p className="muted-small">🤝 Punto de encuentro oficial: {MEETING_POINT.label}</p>
-      </section>
+      <div className="flex flex-col gap-4">
+        <section className="card space-y-2">
+          <h3 className="text-lg font-semibold">{user?.displayName}</h3>
+          <p className="muted-small">{user?.email}</p>
+          <p className="muted-small">📍 {getCountryName(user?.countryCode || APP_COUNTRY_CODE)}</p>
+          <p className="muted-small">Aplicación orientada solo para coleccionistas en Perú.</p>
+          <p className="muted-small">🤝 Punto de encuentro oficial: {MEETING_POINT.label}</p>
+        </section>
 
-      <section className="card space-y-2">
-        <h3 className="text-lg font-semibold">Tu colección</h3>
-        <p className="muted-small">
-          {stats.owned}/{stats.total} pegadas · {stats.duplicates} repetidas · {stats.missing} faltantes
-        </p>
-      </section>
+        <section className="card space-y-2">
+          <h3 className="text-lg font-semibold">Tu colección</h3>
+          <p className="muted-small">
+            {stats.owned}/{stats.total} pegadas · {stats.duplicates} repetidas · {stats.missing} faltantes
+          </p>
+        </section>
 
-      <MarketSettingsPanel />
+        <MarketSettingsPanel />
+        <MarketSelectionPanel />
+      </div>
     </div>
   )
 }
