@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { SiteFooter } from '@/components/layout/site-footer'
+import { PRODUCT_NAME } from '@/lib/brand'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Política de privacidad | Panini 2026 Tracker',
-  description: 'Cómo Panini Tracker recopila, usa y protege tus datos personales.',
+  title: `Política de privacidad | ${PRODUCT_NAME}`,
+  description: `Cómo ${PRODUCT_NAME} recopila, usa y protege tus datos personales.`,
 }
 
 export default function PrivacidadPage() {
@@ -28,7 +29,7 @@ export default function PrivacidadPage() {
           <section>
             <h2>1. Responsable</h2>
             <p>
-              Panini Tracker es una aplicación para que coleccionistas gestionen su álbum Panini Mundial 2026,
+              {PRODUCT_NAME} es una aplicación para que coleccionistas gestionen su álbum Panini Mundial 2026,
               encuentren intercambios y publiquen ofertas en un mercado público opcional.
             </p>
           </section>

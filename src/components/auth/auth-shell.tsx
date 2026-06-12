@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { BrandLogo } from '@/components/brand/brand-logo'
+import { ORG_NAME } from '@/lib/brand'
 import { SiteFooter } from '@/components/layout/site-footer'
 
 type AuthShellProps = {
@@ -15,7 +16,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       <main className="auth-shell">
         <div className="card auth-card w-full max-w-md space-y-6">
           <header className="auth-card-header space-y-4 text-center">
-            <BrandLogo size="lg" linked href="/mercado" subtitle="Álbum Panini Mundial 2026" />
+            <BrandLogo size="lg" linked href="/mercado" subtitle={ORG_NAME} />
             <div className="space-y-2">
               <h1 className="text-2xl font-bold">{title}</h1>
               {subtitle && <p className="text-sm text-[var(--text-secondary)]">{subtitle}</p>}

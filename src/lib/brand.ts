@@ -1,5 +1,6 @@
 export const ORG_NAME = 'Refugio Gastronómico'
-export const PRODUCT_NAME = 'Panini 2026 Tracker'
+export const BRAND_TITLE = 'Refugio Intercambiatón'
+export const PRODUCT_NAME = BRAND_TITLE
 
 export const MEETING_POINT = {
   name: 'Play Bar',

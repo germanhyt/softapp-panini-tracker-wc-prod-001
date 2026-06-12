@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/db/prisma'
+import { PRODUCT_NAME } from '@/lib/brand'
 import { getAppBaseUrl, logDevEmail, sendEmailWithResend } from '@/lib/email/resend'
 import { isDevVerificationExposed } from '@/lib/auth/email-verification'
 
@@ -55,17 +56,17 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
   const url = buildPasswordResetUrl(token)
   const sent = await sendEmailWithResend({
     to: email,
-    subject: 'Restablecer contraseña — Panini Tracker',
+    subject: `Restablecer contraseña — ${PRODUCT_NAME}`,
     html: `
       <p>Hola,</p>
-      <p>Recibimos una solicitud para restablecer tu contraseña en Panini Tracker.</p>
+      <p>Recibimos una solicitud para restablecer tu contraseña en ${PRODUCT_NAME}.</p>
       <p><a href="${url}">Crear nueva contraseña</a></p>
       <p>El enlace expira en ${TOKEN_TTL_HOURS} hora. Si no solicitaste esto, ignora este mensaje.</p>
     `,
   })
 
   if (!sent) {
-    logDevEmail(email, 'Restablecer contraseña — Panini Tracker', url)
+    logDevEmail(email, `Restablecer contraseña — ${PRODUCT_NAME}`, url)
   }
 
   return url

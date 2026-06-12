@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { BRAND_TITLE } from '@/lib/brand'
 
 type BrandLogoProps = {
   size?: 'sm' | 'md' | 'lg'
@@ -29,7 +30,7 @@ export function BrandLogo({
       <div className="brand-logo-image-wrap">
         <Image
           src="/logo-panini.jpg"
-          alt="Logo Copa Mundial FIFA 2026"
+          alt={`Logo ${BRAND_TITLE}`}
           width={sizing.width}
           height={sizing.height}
           className="brand-logo-image"
@@ -38,7 +39,7 @@ export function BrandLogo({
       </div>
       {showTitle && (
         <div className="brand-logo-text">
-          <strong className={sizing.title}>Panini WC 2026</strong>
+          <strong className={sizing.title}>{BRAND_TITLE}</strong>
           {subtitle && <span className={`brand-logo-subtitle ${sizing.subtitle}`}>{subtitle}</span>}
         </div>
       )}

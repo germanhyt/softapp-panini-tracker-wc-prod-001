@@ -1,4 +1,5 @@
 import { Providers } from '@/components/providers'
+import { PRODUCT_NAME } from '@/lib/brand'
 import type { Metadata } from 'next'
 import { Poppins } from 'next/font/google'
 import './globals.css'
@@ -10,8 +11,8 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'Panini 2026 Tracker',
-  description: 'Control de figuritas del álbum Panini Mundial 2026 con intercambios inteligentes',
+  title: PRODUCT_NAME,
+  description: 'Intercambio de figuritas del álbum Panini Mundial 2026 con matches y mercado comunitario',
 }
 
 export default function RootLayout({

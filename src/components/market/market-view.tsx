@@ -6,6 +6,7 @@ import { MarketChatPreviewPanel } from '@/components/market/market-chat-preview-
 import { useMarketRealtime } from '@/hooks/use-market-realtime'
 import { teamNames, teams } from '@/lib/domain/catalog'
 import { APP_COUNTRY_CODE, COUNTRIES } from '@/lib/domain/countries'
+import { BRAND_TITLE } from '@/lib/brand'
 import type { ListingType, MarketSearchResponse } from '@/lib/market/service'
 
 type MarketFilters = {
@@ -125,7 +126,7 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
     <div className="market-page">
       <header className="market-intro">
         <div className="market-intro-copy">
-          <p className="market-hero-kicker">Álbum Panini · Mundial 2026</p>
+          <p className="market-hero-kicker">{BRAND_TITLE}</p>
           <h1 className="market-hero-title">Mercado de figuritas</h1>
           <p className="market-intro-desc">
             Lo que la comunidad tiene de sobra o aún le falta pegar. Filtra y encuentra tu próximo trueque.

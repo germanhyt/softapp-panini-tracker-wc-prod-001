@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/db/prisma'
+import { PRODUCT_NAME } from '@/lib/brand'
 import { getAppBaseUrl, logDevEmail, sendEmailWithResend } from '@/lib/email/resend'
 
 const TOKEN_TTL_HOURS = 24
@@ -51,17 +52,17 @@ export async function sendVerificationEmail(email: string, token: string): Promi
   const url = buildVerificationUrl(token)
   const sent = await sendEmailWithResend({
     to: email,
-    subject: 'Verifica tu correo — Panini Tracker',
+    subject: `Verifica tu correo — ${PRODUCT_NAME}`,
     html: `
       <p>Hola,</p>
-      <p>Confirma tu correo para usar el tracker de figuritas Panini 2026:</p>
+      <p>Confirma tu correo para usar ${PRODUCT_NAME}:</p>
       <p><a href="${url}">Verificar mi correo</a></p>
       <p>Si no creaste esta cuenta, ignora este mensaje.</p>
     `,
   })
 
   if (!sent) {
-    logDevEmail(email, 'Verifica tu correo — Panini Tracker', url)
+    logDevEmail(email, `Verifica tu correo — ${PRODUCT_NAME}`, url)
   }
 
   return url
