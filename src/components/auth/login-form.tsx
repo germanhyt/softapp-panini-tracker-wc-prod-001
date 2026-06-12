@@ -16,6 +16,9 @@ function mapLoginError(code: string | null): string | null {
   if (code === 'GoogleNotRegistered') {
     return 'Esta cuenta de Google no está registrada. Crea tu cuenta en Registro.'
   }
+  if (code === 'OAuthAccountNotLinked') {
+    return 'Este correo ya tiene cuenta con contraseña. Inicia sesión con tu correo y contraseña, o regístrate con Google usando otro correo.'
+  }
   if (code === 'CredentialsSignin') {
     return 'Correo o contraseña incorrectos.'
   }
