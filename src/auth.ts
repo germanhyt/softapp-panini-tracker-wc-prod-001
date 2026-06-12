@@ -108,7 +108,6 @@ export const { handlers, auth, signIn, signOut } = initAuth({
         return '/login?error=GoogleNotRegistered'
       }
 
-      await ensureGoogleProfile(user.id, user.email, user.name, user.image)
       return true
     },
     async jwt({
@@ -138,6 +137,18 @@ export const { handlers, auth, signIn, signOut } = initAuth({
     },
     session({ session, token }: { session: Session; token: JWT }) {
       return applySessionToken(session, token)
+    },
+  },
+  events: {
+    async signIn({
+      user,
+      account,
+    }: {
+      user?: { id?: string; email?: string | null; name?: string | null; image?: string | null }
+      account?: { provider?: string } | null
+    }) {
+      if (account?.provider !== 'google' || !user?.id || !user.email) return
+      await ensureGoogleProfile(user.id, user.email, user.name, user.image)
     },
   },
 })

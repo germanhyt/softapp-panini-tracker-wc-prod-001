@@ -44,11 +44,21 @@ export async function ensureGoogleProfile(
   displayName?: string | null,
   image?: string | null,
 ): Promise<void> {
+  const normalizedEmail = normalizeEmail(email)
   const { name, surname } = splitDisplayName(displayName || '')
-  const admin = isAdminEmail(email)
+  const admin = isAdminEmail(normalizedEmail)
+
+  const dbUser = await prisma.user.findFirst({
+    where: { OR: [{ id: userId }, { email: normalizedEmail }] },
+    select: { id: true },
+  })
+
+  if (!dbUser) {
+    throw new Error(`Google profile setup failed: user not found (${normalizedEmail})`)
+  }
 
   await prisma.user.update({
-    where: { id: userId },
+    where: { id: dbUser.id },
     data: {
       name: displayName || undefined,
       image: image || undefined,
@@ -58,7 +68,7 @@ export async function ensureGoogleProfile(
   })
 
   await prisma.userProfile.upsert({
-    where: { userId },
+    where: { userId: dbUser.id },
     update: {
       photoUrl: image || undefined,
       photoSource: image ? 'google' : 'none',
@@ -67,7 +77,7 @@ export async function ensureGoogleProfile(
       updatedAt: new Date(),
     },
     create: {
-      userId,
+      userId: dbUser.id,
       name,
       surname,
       photoUrl: image || null,
