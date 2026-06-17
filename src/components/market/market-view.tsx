@@ -3,10 +3,8 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MarketChatPreviewPanel } from '@/components/market/market-chat-preview-panel'
-import { useMarketRealtime } from '@/hooks/use-market-realtime'
 import { teamNames, teams } from '@/lib/domain/catalog'
-import { APP_COUNTRY_CODE, COUNTRIES } from '@/lib/domain/countries'
-import { BRAND_TITLE } from '@/lib/brand'
+import { COUNTRIES } from '@/lib/domain/countries'
 import type { ListingType, MarketSearchResponse } from '@/lib/market/service'
 
 type MarketFilters = {
@@ -19,17 +17,11 @@ type MarketFilters = {
 
 const DEFAULT_FILTERS: MarketFilters = {
   type: 'all',
-  country: APP_COUNTRY_CODE,
+  country: '',
   team: '',
   q: '',
   page: 1,
 }
-
-const TYPE_TABS = [
-  { value: 'all', label: 'Todas', hint: 'Repetidas y faltantes' },
-  { value: 'offer', label: 'Repetidas', hint: 'Tiene de sobra' },
-  { value: 'want', label: 'Faltantes', hint: 'Le falta pegar' },
-] as const
 
 function initials(name: string): string {
   return name.slice(0, 1).toUpperCase() || 'C'
@@ -46,7 +38,7 @@ function formatRelativeDate(iso: string): string {
 }
 
 function listingLabel(type: ListingType): string {
-  return type === 'offer' ? 'Repetida' : 'Falta'
+  return type === 'offer' ? 'Ofrece' : 'Busca'
 }
 
 type MarketViewProps = {
@@ -70,8 +62,8 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
     return params.toString()
   }, [filters])
 
-  const loadMarket = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true)
+  const loadMarket = useCallback(async () => {
+    setLoading(true)
     try {
       const response = await fetch(`/api/market?${queryString}`)
       if (!response.ok) throw new Error('Failed to load market')
@@ -84,15 +76,9 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
         pagination: { page: filters.page, limit: 24, total: 0, totalPages: 0 },
       })
     } finally {
-      if (!silent) setLoading(false)
+      setLoading(false)
     }
   }, [filters.page, queryString])
-
-  const refreshMarket = useCallback(() => {
-    void loadMarket(true)
-  }, [loadMarket])
-
-  const { live } = useMarketRealtime({ onRefresh: refreshMarket })
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -116,54 +102,50 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
   const items = data?.items ?? []
   const pagination = data?.pagination ?? { page: 1, limit: 24, total: 0, totalPages: 0 }
 
-  const resultsLabel = loading
-    ? 'Cargando publicaciones…'
-    : pagination.total === 0
-      ? 'Sin resultados'
-      : `${pagination.total} figurita${pagination.total === 1 ? '' : 's'}`
-
   return (
     <div className="market-page">
-      <header className="market-intro">
-        <div className="market-intro-copy">
-          <p className="market-hero-kicker">{BRAND_TITLE}</p>
-          <h1 className="market-hero-title">Mercado de figuritas</h1>
-          <p className="market-intro-desc">
-            Lo que la comunidad tiene de sobra o aún le falta pegar. Filtra y encuentra tu próximo trueque.
-          </p>
-        </div>
-        {live ? (
-          <span className="market-live-badge">En vivo</span>
-        ) : (
-          <span className="market-live-badge market-live-badge-polling">Actualizando</span>
-        )}
-      </header>
+      <section className="card market-hero-card">
+        <p className="market-hero-kicker">Mercado comunitario</p>
+        <h2 className="market-hero-title">Encuentra repetidas y faltantes publicadas</h2>
+        <p className="muted-small">
+          Filtra por país, selección o código para ver qué hay disponible para intercambiar.
+          El chat es interno y privado; aquí solo puedes ver una vista previa cerrada si ya conversaste.
+        </p>
+      </section>
 
-      <section className="card market-toolbar" aria-label="Filtros del mercado">
-        <div className="market-toolbar-top">
-          <div className="market-type-tabs" role="tablist" aria-label="Tipo de publicación">
-            {TYPE_TABS.map((tab) => (
-              <button
-                key={tab.value}
-                type="button"
-                role="tab"
-                aria-selected={filters.type === tab.value}
-                title={tab.hint}
-                className={`market-type-tab ${filters.type === tab.value ? 'is-active' : ''}`}
-                onClick={() => setFilters((prev) => ({ ...prev, type: tab.value, page: 1 }))}
-              >
-                {tab.label}
-              </button>
-            ))}
+      <section className="card market-filters">
+        <div className="market-filters-head">
+          <div>
+            <h2 className="market-section-title">Filtros</h2>
+            <p className="muted-small">Busca figuritas repetidas o faltantes publicadas por otros coleccionistas.</p>
           </div>
-          <button type="button" className="btn-neutral-small market-clear-btn" onClick={resetFilters}>
-            Limpiar filtros
+          <button type="button" className="btn-neutral-small" onClick={resetFilters}>
+            Limpiar
           </button>
+        </div>
+
+        <div className="market-type-tabs" role="tablist" aria-label="Tipo de publicación">
+          {([
+            { value: 'all', label: 'Todos' },
+            { value: 'offer', label: 'Repetidas' },
+            { value: 'want', label: 'Faltantes' },
+          ] as const).map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              role="tab"
+              aria-selected={filters.type === tab.value}
+              className={`market-type-tab ${filters.type === tab.value ? 'is-active' : ''}`}
+              onClick={() => setFilters((prev) => ({ ...prev, type: tab.value, page: 1 }))}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         <div className="market-filters-grid">
           <label className="market-filter-field">
-            <span>País del coleccionista</span>
+            <span>País</span>
             <select
               value={filters.country}
               onChange={(event) =>
@@ -174,7 +156,7 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
                 }))
               }
             >
-              <option value="">Todos los países</option>
+              <option value="">Todos</option>
               {COUNTRIES.map((country) => (
                 <option key={country.code} value={country.code}>
                   {country.name}
@@ -195,7 +177,7 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
                 }))
               }
             >
-              <option value="">Todas las selecciones</option>
+              <option value="">Todas</option>
               {teams.map((team) => (
                 <option key={team} value={team}>
                   {teamNames[team] || team}
@@ -204,58 +186,50 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
             </select>
           </label>
 
-          <label className="market-filter-field market-filter-field-search">
-            <span>Código</span>
+          <label className="market-filter-field market-filter-field-wide">
+            <span>Código de figurita</span>
             <div className="market-search-row">
               <input
                 value={draftQuery}
                 onChange={(event) => setDraftQuery(event.target.value.toUpperCase())}
-                placeholder="PER1, ARG5, FWC1…"
-                aria-label="Buscar por código de figurita"
+                placeholder="Ej. PER1, ARG5, FWC1"
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') applyFilters()
                 }}
               />
-              <button type="button" className="btn-primary market-search-btn" onClick={applyFilters}>
+              <button type="button" className="btn-primary" onClick={applyFilters}>
                 Buscar
               </button>
             </div>
           </label>
         </div>
+      </section>
 
-        <div className="market-results-bar">
-          <p className="market-results-count">
-            <strong>{resultsLabel}</strong>
-            {!loading && pagination.totalPages > 1 ? (
-              <span className="market-results-page">
-                {' '}
-                · Página {pagination.page} de {pagination.totalPages}
-              </span>
-            ) : null}
+      <section className="market-results-head">
+        <p className="muted-small">
+          {loading
+            ? 'Cargando publicaciones...'
+            : `${pagination.total} publicación${pagination.total === 1 ? '' : 'es'} encontrada${pagination.total === 1 ? '' : 's'}`}
+        </p>
+        {!isAuthenticated && (
+          <p className="muted-small">
+            <Link href="/login" className="market-inline-link">
+              Inicia sesión
+            </Link>{' '}
+            para usar el chat interno con otros coleccionistas.
           </p>
-          <p className="market-results-hint muted-small">
-            {live
-              ? 'La grilla se actualiza al instante cuando alguien publica.'
-              : 'La grilla se refresca automáticamente cada pocos segundos.'}
-            {isAuthenticated ? ' · Puedes ver el chat en cada tarjeta.' : ''}
-          </p>
-        </div>
+        )}
       </section>
 
       {loading ? (
-        <div className="market-grid market-grid-loading" aria-busy="true" aria-label="Cargando mercado">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="market-card market-card-skeleton" aria-hidden="true" />
-          ))}
-        </div>
+        <div className="loading market-loading">Cargando mercado...</div>
       ) : items.length === 0 ? (
         <section className="card empty-market-card">
-          <p className="market-empty-kicker">Sin coincidencias</p>
-          <h2>Nadie publicó con estos filtros</h2>
-          <p>Prueba otro país, selección o código. También puedes publicar tus repetidas o faltantes desde tu perfil.</p>
+          <h3>Sin publicaciones por ahora</h3>
+          <p>No hay figuritas que coincidan con estos filtros. Prueba ampliar la búsqueda o vuelve más tarde.</p>
           {isAuthenticated ? (
             <Link href="/profile" className="btn-primary">
-              Ir a mi perfil
+              Publicar desde mi perfil
             </Link>
           ) : (
             <Link href="/register" className="btn-primary">
@@ -269,37 +243,20 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
             <article key={item.id} className={`market-card market-card-${item.listingType}`}>
               <div className="market-card-top">
                 <span className={`market-badge market-badge-${item.listingType}`}>{listingLabel(item.listingType)}</span>
-                <time className="market-card-date muted-small" dateTime={item.updatedAt}>
-                  {formatRelativeDate(item.updatedAt)}
-                </time>
+                <span className="muted-small">{formatRelativeDate(item.updatedAt)}</span>
               </div>
 
               <div className="market-sticker-code">{item.stickerCode}</div>
 
-              <div className="market-card-meta"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
-                  alignItems: 'flex-start',
-                }}
-              >
-                <div>
-                  {item.listingType === 'offer' ? (
-                    <p className="market-card-detail">
-                      <span className="market-card-detail-label">Disponible</span>
-                      <strong>{item.quantity}</strong>
-                      <span className="market-card-detail-unit">{item.quantity === 1 ? 'unidad' : 'unidades'}</span>
-                    </p>
-                  ) : (
-                    <p className="market-card-detail market-card-detail-want">Busca completar su álbum</p>
-                  )}
-                </div>
-                <div>
-                  {item.teamCode ? (
-                    <span className="market-team-chip">{teamNames[item.teamCode] || item.teamCode}</span>
-                  ) : null}
-                </div>
+              <div className="market-card-meta">
+                {item.listingType === 'offer' ? (
+                  <p>
+                    Cantidad: <strong>{item.quantity}</strong>
+                  </p>
+                ) : (
+                  <p>Necesita esta figurita</p>
+                )}
+                {item.teamCode && <p className="muted-small">{teamNames[item.teamCode] || item.teamCode}</p>}
               </div>
 
               <div className="market-user-row">
@@ -311,9 +268,9 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
                     initials(item.user.displayName)
                   )}
                 </div>
-                <div className="market-user-info">
+                <div>
                   <div className="market-user-name">{item.user.displayName}</div>
-                  {item.user.countryName ? <div className="muted-small">{item.user.countryName}</div> : null}
+                  {item.user.countryName && <div className="muted-small">{item.user.countryName}</div>}
                 </div>
               </div>
 
@@ -322,6 +279,10 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
                   publisherUserId={item.user.publisherUserId}
                   publisherName={item.user.displayName}
                 />
+              ) : !isAuthenticated ? (
+                <Link href="/login" className="btn-secondary market-contact-link">
+                  Inicia sesión para chat interno
+                </Link>
               ) : null}
             </article>
           ))}
@@ -338,8 +299,8 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
           >
             Anterior
           </button>
-          <span className="market-pagination-label">
-            Página <strong>{pagination.page}</strong> de <strong>{pagination.totalPages}</strong>
+          <span className="muted-small">
+            Página {pagination.page} de {pagination.totalPages}
           </span>
           <button
             type="button"

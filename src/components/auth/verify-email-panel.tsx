@@ -72,12 +72,12 @@ export function VerifyEmailPanel() {
         <AuthMessage tone="info">
           {devLink ? (
             <>
-              Cuenta creada para <strong>{email}</strong>. Usa el botón de abajo para verificar tu correo.
+              Cuenta creada para <strong>{email}</strong>. En local no llega correo automático: usa el botón de abajo.
             </>
           ) : (
             <>
-              Enviamos un enlace de verificación a <strong>{email}</strong>. Revisa tu bandeja de entrada y la carpeta
-              de spam. Si no llega en unos minutos, usa &quot;Reenviar correo&quot;.
+              Enviamos un enlace a <strong>{email}</strong>. Si tienes <code>RESEND_API_KEY</code> configurado, revisa tu
+              bandeja; si no, usa &quot;Reenviar&quot; para ver el enlace aquí.
             </>
           )}
         </AuthMessage>
@@ -94,7 +94,7 @@ export function VerifyEmailPanel() {
       {error && <AuthMessage tone="error">{error}</AuthMessage>}
 
       <button type="button" className="btn-primary w-full" onClick={resend} disabled={loading || !email}>
-        {loading ? 'Reenviando...' : devLink ? 'Generar nuevo enlace' : 'Reenviar correo'}
+        {loading ? 'Reenviando...' : devLink ? 'Generar nuevo enlace' : 'Reenviar correo de verificación'}
       </button>
     </AuthShell>
   )

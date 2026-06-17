@@ -138,8 +138,7 @@ export function MarketSettingsPanel() {
         <div>
           <h3 className="text-lg font-semibold">Mercado público</h3>
           <p className="muted-small">
-            Activa qué tipos de publicación quieres mostrar. Luego puedes elegir figuritas específicas en la sección de
-            abajo.
+            Elige qué quieres mostrar y publica tu colección para que otros coleccionistas la vean.
           </p>
         </div>
       </div>

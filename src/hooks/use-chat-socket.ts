@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChatMessageItem } from '@/lib/chat/service'
-import { notifyChatUnreadChanged } from '@/hooks/use-chat-unread'
 
 type WsEnvelope =
   | { type: 'auth_ok'; userId: string }
@@ -93,9 +92,6 @@ export function useChatSocket(conversationId: string): UseChatSocketResult {
 
             return [...withoutClientDuplicate, normalized]
           })
-          if (data.message.senderId !== currentUserIdRef.current) {
-            notifyChatUnreadChanged()
-          }
           return
         }
 

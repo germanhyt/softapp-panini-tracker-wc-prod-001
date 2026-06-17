@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { useOnMount } from '@/hooks/use-on-mount'
-import { notifyChatUnreadChanged } from '@/hooks/use-chat-unread'
 import type { ChatConversationPreview } from '@/lib/chat/service'
 
 function formatTime(iso: string): string {
@@ -26,7 +25,6 @@ export function ChatInboxView() {
       if (!response.ok) throw new Error('Failed to load inbox')
       const payload = (await response.json()) as { conversations: ChatConversationPreview[] }
       setConversations(payload.conversations)
-      notifyChatUnreadChanged()
     } catch (error) {
       console.error('Inbox error:', error)
       setConversations([])
