@@ -4,19 +4,15 @@ import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { useOnMount } from '@/hooks/use-on-mount'
 import type { MarketUserSettings } from '@/lib/market/service'
+import { MEETING_POINT } from '@/lib/brand'
 
 type SettingKey = 'showInMarket' | 'publishOffers' | 'publishWants'
 
 const settingOptions: Array<{
-  key: SettingKey
+  key: Exclude<SettingKey, 'showInMarket'>
   title: string
   description: string
 }> = [
-  {
-    key: 'showInMarket',
-    title: 'Perfil visible',
-    description: 'Permite que otros usuarios te encuentren en el mercado público.',
-  },
   {
     key: 'publishOffers',
     title: 'Publicar repetidas',
@@ -72,9 +68,7 @@ export function MarketSettingsPanel() {
       const payload = (await response.json()) as MarketUserSettings
       setSettings(payload)
 
-      if (key === 'showInMarket') {
-        setMessage(payload.showInMarket ? 'Tu perfil ya es visible en el mercado público.' : 'Tu perfil ya no aparece en el mercado.')
-      } else if (key === 'publishOffers') {
+      if (key === 'publishOffers') {
         setMessage(payload.publishOffers ? 'Se habilitó la publicación de repetidas.' : 'Se ocultaron tus repetidas del mercado.')
       } else {
         setMessage(payload.publishWants ? 'Se habilitó la publicación de faltantes.' : 'Se ocultaron tus faltantes del mercado.')
@@ -136,9 +130,10 @@ export function MarketSettingsPanel() {
     <section className="card market-settings-card">
       <div className="market-settings-intro">
         <div>
-          <h3 className="text-lg font-semibold">Mercado público</h3>
+          <h3 className="text-lg font-semibold">Publicación del mercado</h3>
           <p className="muted-small">
-            Elige qué quieres mostrar y publica tu colección para que otros coleccionistas la vean.
+            Como cuenta de {MEETING_POINT.venue}, el catálogo queda visible automáticamente al publicar repetidas o
+            faltantes.
           </p>
         </div>
       </div>
@@ -196,7 +191,7 @@ export function MarketSettingsPanel() {
           {syncing ? 'Publicando...' : 'Publicar / actualizar colección'}
         </button>
         <Link href="/mercado" className="btn-secondary">
-          Ver mercado público
+          Ver mercado
         </Link>
       </div>
 

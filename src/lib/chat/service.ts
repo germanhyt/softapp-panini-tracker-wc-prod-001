@@ -1,5 +1,13 @@
 import { prisma } from '@/lib/db/prisma'
 import { buildPublicDisplayName } from '@/lib/market/service'
+import {
+  assertConversationAllowed,
+  assertDirectChatAllowed,
+  ChatPolicyError,
+  getUserAdminFlag,
+} from '@/lib/chat/policy'
+
+export { ChatPolicyError, getPrimaryCompanyUserId } from '@/lib/chat/policy'
 
 const MAX_MESSAGE_LENGTH = 2000
 const DEFAULT_HISTORY_LIMIT = 50
@@ -89,9 +97,7 @@ export async function findExistingDirectConversation(userId: string, otherUserId
 }
 
 export async function findOrCreateDirectConversation(userId: string, otherUserId: string): Promise<string> {
-  if (userId === otherUserId) {
-    throw new Error('No puedes iniciar un chat contigo mismo')
-  }
+  await assertDirectChatAllowed(userId, otherUserId)
 
   const otherUser = await prisma.user.findFirst({
     where: {
@@ -126,6 +132,16 @@ export async function findOrCreateDirectConversation(userId: string, otherUserId
 }
 
 export async function getMarketChatPreview(userId: string, otherUserId: string): Promise<MarketChatPreview> {
+  try {
+    await assertDirectChatAllowed(userId, otherUserId)
+  } catch {
+    return {
+      conversationId: null,
+      messages: [],
+      isClosed: true,
+    }
+  }
+
   const conversationId = await findExistingDirectConversation(userId, otherUserId)
   if (!conversationId) {
     return {
@@ -145,6 +161,8 @@ export async function getMarketChatPreview(userId: string, otherUserId: string):
 }
 
 export async function listConversationsForUser(userId: string): Promise<ChatConversationPreview[]> {
+  const viewerIsAdmin = await getUserAdminFlag(userId)
+
   const rows = await prisma.chatParticipant.findMany({
     where: { userId },
     include: {
@@ -160,6 +178,7 @@ export async function listConversationsForUser(userId: string): Promise<ChatConv
                       name: true,
                       surname: true,
                       photoUrl: true,
+                      isAdmin: true,
                     },
                   },
                 },
@@ -190,6 +209,9 @@ export async function listConversationsForUser(userId: string): Promise<ChatConv
   for (const row of rows) {
     const otherParticipant = row.conversation.participants.find((participant) => participant.userId !== userId)
     if (!otherParticipant) continue
+
+    const otherIsAdmin = Boolean(otherParticipant.user.profile?.isAdmin)
+    if (!viewerIsAdmin && !otherIsAdmin) continue
 
     const unreadCount = await prisma.chatMessage.count({
       where: {
@@ -233,6 +255,8 @@ export async function getConversationMessages(
   if (!allowed) {
     throw new Error('Conversación no encontrada')
   }
+
+  await assertConversationAllowed(conversationId)
 
   const rows = await prisma.chatMessage.findMany({
     where: { conversationId },
@@ -283,6 +307,8 @@ export async function sendChatMessage(input: {
   if (!allowed) {
     throw new Error('Conversación no encontrada')
   }
+
+  await assertConversationAllowed(input.conversationId)
 
   const now = new Date()
 
@@ -348,6 +374,12 @@ export async function getTotalUnreadCount(userId: string): Promise<number> {
 export async function getConversationPeer(userId: string, conversationId: string) {
   const allowed = await userCanAccessConversation(userId, conversationId)
   if (!allowed) return null
+
+  try {
+    await assertConversationAllowed(conversationId)
+  } catch {
+    return null
+  }
 
   const peer = await prisma.chatParticipant.findFirst({
     where: {

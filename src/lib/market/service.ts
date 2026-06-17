@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db/prisma'
 import { STANDARD_CODE_SET, teams } from '@/lib/domain/catalog'
 import { getCountryName } from '@/lib/domain/countries'
 import { getDuplicateCodes, getMissingCodes } from '@/lib/domain/match-engine'
+import { getAdminEmails, isAdminEmail } from '@/lib/auth/users'
 import { notifyMarketUpdated } from '@/lib/realtime/notify-market'
 import { filterCodesBySelection, pruneInvalidMarketSelections } from '@/lib/market/selection'
 import { getUserSavedStickerMap } from '@/lib/stickers/service'
@@ -65,6 +66,15 @@ export type MarketSettingsPatch = {
 
 const MAX_LIMIT = 48
 const DEFAULT_LIMIT = 24
+
+export async function isMarketPublisher(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  })
+  if (!user?.email) return false
+  return isAdminEmail(user.email)
+}
 
 export function buildPublicDisplayName(name: string, surname: string): string {
   const first = name.trim()
@@ -207,6 +217,11 @@ export async function syncUserMarketListings(userId: string): Promise<{ offerCou
   const desiredKeys = new Set(desiredItems.map((item) => `${item.listingType}:${item.stickerCode}`))
 
   await prisma.$transaction(async (tx) => {
+    await tx.userProfile.update({
+      where: { userId },
+      data: { showInMarket: true },
+    })
+
     for (const item of desiredItems) {
       await tx.marketListing.upsert({
         where: {
@@ -283,6 +298,10 @@ export async function syncMarketListingsIfPublishing(
   userId: string,
   changedCodes?: string[],
 ): Promise<boolean> {
+  if (!(await isMarketPublisher(userId))) {
+    return false
+  }
+
   const profile = await prisma.userProfile.findUnique({
     where: { userId },
     select: {
@@ -331,6 +350,15 @@ export async function searchMarketListings(
     }
   }
 
+  const adminEmails = getAdminEmails()
+
+  if (adminEmails.length === 0) {
+    return {
+      items: [],
+      pagination: { page, limit, total: 0, totalPages: 0 },
+    }
+  }
+
   const where = {
     isActive: true,
     ...(listingType ? { listingType } : {}),
@@ -344,9 +372,9 @@ export async function searchMarketListings(
       : {}),
     user: {
       emailVerified: { not: null },
+      email: { in: adminEmails },
       profile: {
         is: {
-          showInMarket: true,
           profileCompletedAt: { not: null },
           ...(country ? { countryCode: country } : {}),
         },

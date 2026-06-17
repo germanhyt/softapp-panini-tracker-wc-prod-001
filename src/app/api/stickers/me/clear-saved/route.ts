@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { auth } from '@/auth'
+import { requireAdminSession } from '@/lib/auth/require-admin'
 import { syncMarketListingsIfPublishing } from '@/lib/market/service'
 import { clearSavedStickersBulk, getUserSavedStickerMap } from '@/lib/stickers/service'
 
@@ -9,9 +9,9 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { session, error } = await requireAdminSession()
+  if (error || !session?.user?.id) {
+    return error ?? NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
   try {

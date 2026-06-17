@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: `Mercado de figuritas | ${PRODUCT_NAME}`,
   description:
-    'Explora repetidas y faltantes publicadas por coleccionistas del álbum Panini Mundial 2026. Filtra por país, selección o código.',
+    'Explora el catálogo de figuritas disponibles para canje presencial en Play Bar · Refugio Gastronómico. Filtra por selección o código.',
 }
 
 export default async function MercadoPage() {

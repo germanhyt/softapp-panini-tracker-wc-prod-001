@@ -15,4 +15,5 @@ export async function GET() {
     console.error('Chat unread error:', error)
     return NextResponse.json({ error: 'No se pudo cargar el contador' }, { status: 500 })
   }
+
 }

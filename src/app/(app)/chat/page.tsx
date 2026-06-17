@@ -6,8 +6,8 @@ export default function ChatPage() {
     <div>
       <h2 className="page-title">💬 Chat interno</h2>
       <p className="muted-small chat-page-intro">
-        Conversaciones privadas entre coleccionistas en Perú. Usa la campana 🔔 del encabezado para ver mensajes
-        nuevos. Los trueques presenciales se coordinan en {MEETING_POINT.label}.
+        Escribe a {MEETING_POINT.venue} para consultar disponibilidad antes de acercarte a {MEETING_POINT.label}.
+        Usa la campana 🔔 del encabezado para ver mensajes nuevos.
       </p>
       <ChatInboxView />
     </div>

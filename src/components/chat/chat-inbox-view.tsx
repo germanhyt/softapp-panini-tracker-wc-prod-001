@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { useOnMount } from '@/hooks/use-on-mount'
+import { MEETING_POINT } from '@/lib/brand'
 import type { ChatConversationPreview } from '@/lib/chat/service'
 
 function formatTime(iso: string): string {
@@ -44,10 +45,11 @@ export function ChatInboxView() {
       <section className="card chat-empty-card">
         <h3>Sin conversaciones aún</h3>
         <p className="muted-small">
-          Ve a Matches y pulsa &quot;Enviar mensaje&quot; para coordinar un intercambio en tiempo real.
+          Ve al mercado y escribe a {MEETING_POINT.venue} para consultar disponibilidad antes de acercarte a{' '}
+          {MEETING_POINT.label}.
         </p>
-        <Link href="/matches" className="btn-primary">
-          Ir a Matches
+        <Link href="/mercado" className="btn-primary">
+          Explorar mercado
         </Link>
       </section>
     )

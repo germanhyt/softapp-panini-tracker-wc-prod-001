@@ -16,12 +16,20 @@ export function RegisterForm() {
   const router = useRouter()
   const [name, setName] = useState('')
   const [surname, setSurname] = useState('')
+  const [phone, setPhone] = useState('')
+  const [birthDate, setBirthDate] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const countryCode = APP_COUNTRY_CODE
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const today = new Date().toISOString().slice(0, 10)
+
+  const handlePhoneChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 9)
+    setPhone(digits)
+  }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -37,7 +45,7 @@ export function RegisterForm() {
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, surname, email, password, countryCode }),
+      body: JSON.stringify({ name, surname, phone: `+51${phone}`, birthDate, email, password, countryCode }),
     })
 
     const data = (await response.json()) as { email: string; error?: string; devVerificationUrl?: string }
@@ -63,7 +71,7 @@ export function RegisterForm() {
   return (
     <AuthShell
       title="Crear cuenta"
-      subtitle="Regístrate para guardar tu álbum en la nube"
+      subtitle="Regístrate para ver el mercado y chatear con la empresa"
       footer={
         <div className="space-y-2 text-center text-sm text-[var(--text-secondary)]">
           <p>
@@ -83,10 +91,30 @@ export function RegisterForm() {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-2 gap-3">
           <AuthField label="Nombre">
-            <input className={authInputClassName()} value={name} onChange={(e) => setName(e.target.value)} required />
+            <input
+              className={authInputClassName()}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoComplete="given-name"
+              minLength={2}
+              maxLength={60}
+              pattern="[A-Za-zÀ-ÿ' ]+"
+              title="Ingresa un nombre válido"
+              required
+            />
           </AuthField>
           <AuthField label="Apellido">
-            <input className={authInputClassName()} value={surname} onChange={(e) => setSurname(e.target.value)} required />
+            <input
+              className={authInputClassName()}
+              value={surname}
+              onChange={(e) => setSurname(e.target.value)}
+              autoComplete="family-name"
+              minLength={2}
+              maxLength={60}
+              pattern="[A-Za-zÀ-ÿ' ]+"
+              title="Ingresa un apellido válido"
+              required
+            />
           </AuthField>
         </div>
 
@@ -103,9 +131,43 @@ export function RegisterForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
             required
           />
         </AuthField>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <AuthField label="Celular (Perú)">
+            <div className="flex items-center gap-2">
+              <span className="auth-country-fixed min-w-14 text-center">+51</span>
+              <input
+                className={authInputClassName()}
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                placeholder="912345678"
+                autoComplete="tel-national"
+                minLength={9}
+                maxLength={9}
+                pattern="9[0-9]{8}"
+                title="Ingresa 9 dígitos de celular peruano"
+                required
+              />
+            </div>
+          </AuthField>
+          <AuthField label="Fecha de nacimiento">
+            <input
+              className={authInputClassName()}
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              min="1900-01-01"
+              max={today}
+              required
+            />
+          </AuthField>
+        </div>
 
         <AuthField label="Contraseña">
           <input
@@ -114,6 +176,7 @@ export function RegisterForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={6}
+            autoComplete="new-password"
             required
           />
         </AuthField>
@@ -125,6 +188,7 @@ export function RegisterForm() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             minLength={6}
+            autoComplete="new-password"
             required
           />
         </AuthField>

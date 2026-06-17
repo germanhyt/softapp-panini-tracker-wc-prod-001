@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import type { Session } from 'next-auth'
 import { authConfig } from '@/auth.config'
+import { getHomeRouteForUser, isAdminOnlyAppRoute } from '@/lib/auth/home-route'
 
 const initAuth = NextAuth as (config: object) => {
   auth: (
@@ -53,7 +54,11 @@ export default auth((req) => {
   }
 
   if (session.user.profileComplete && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+    return NextResponse.redirect(new URL(getHomeRouteForUser(Boolean(session.user.isAdmin)), req.url))
+  }
+
+  if (session.user.profileComplete && !session.user.isAdmin && isAdminOnlyAppRoute(pathname)) {
+    return NextResponse.redirect(new URL('/mercado', req.url))
   }
 
   return NextResponse.next()

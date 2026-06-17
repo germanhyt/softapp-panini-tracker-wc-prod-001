@@ -5,13 +5,16 @@ import { BrandLogo } from '@/components/brand/brand-logo'
 import { ChatNotificationBell } from '@/components/chat/chat-notification-bell'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { SiteFooter } from '@/components/layout/site-footer'
+import { getHomeRouteForUser } from '@/lib/auth/home-route'
 import { getRegisteredMemberCount } from '@/lib/matches/service'
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth()
+  const isAdmin = Boolean(session?.user?.isAdmin)
   const initial = (session?.user?.name || session?.user?.email || 'U').slice(0, 1).toUpperCase()
   const memberCount = await getRegisteredMemberCount()
   const formattedMembers = new Intl.NumberFormat('es-PE').format(memberCount)
+  const homeHref = getHomeRouteForUser(isAdmin)
 
   return (
     <>
@@ -20,10 +23,16 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <BrandLogo
             size="md"
             linked
-            href="/dashboard"
-            subtitle="Completar el álbum es más rápido cuando todos aportamos."
+            href={homeHref}
+            subtitle={
+              isAdmin
+                ? 'Completar el álbum es más rápido cuando todos aportamos.'
+                : 'Mercado y chat con Refugio Gastronómico.'
+            }
           />
-          {memberCount > 0 && <p className="brand-members">{formattedMembers} miembros registrados</p>}
+          {isAdmin && memberCount > 0 && (
+            <p className="brand-members">{formattedMembers} miembros registrados</p>
+          )}
         </div>
         <div className="user-info">
           <ChatNotificationBell />
@@ -38,9 +47,14 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="header-profile-text">
               <strong>{session?.user?.name || 'Coleccionista'}</strong>
-              <small>Mi perfil ⚙️</small>
+              <small>{isAdmin ? 'Mi perfil ⚙️' : 'Mi cuenta ⚙️'}</small>
             </div>
           </Link>
+          {!isAdmin && (
+            <Link href="/mercado" className="header-logout">
+              Mercado
+            </Link>
+          )}
           <form action={signOutAction}>
             <button type="submit" className="header-logout">
               Salir
@@ -51,7 +65,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="main-content">{children}</main>
       <SiteFooter withBottomNav />
-      <BottomNav isAdmin={Boolean(session?.user?.isAdmin)} />
+      <BottomNav isAdmin={isAdmin} />
     </>
   )
 }

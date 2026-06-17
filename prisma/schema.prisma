@@ -43,6 +43,8 @@ model UserProfile {
   name               String    @default("")
   surname            String    @default("")
   countryCode        String?   @map("country_code") @db.VarChar(8)
+  phone              String?   @db.VarChar(16)
+  birthDate          DateTime? @map("birth_date") @db.Date
   photoUrl           String?   @map("photo_url")
   photoSource        String    @default("none") @map("photo_source")
   provider           String    @default("password")

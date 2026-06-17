@@ -26,6 +26,14 @@ export async function loadSessionUser(userId: string): Promise<SessionUserPayloa
   if (!user?.email) return null
 
   const profileComplete = isProfileComplete(user.profile)
+  const shouldBeAdmin = isAdminEmail(user.email)
+
+  if (user.profile && user.profile.isAdmin !== shouldBeAdmin) {
+    await prisma.userProfile.update({
+      where: { userId },
+      data: { isAdmin: shouldBeAdmin },
+    })
+  }
 
   return {
     id: user.id,
@@ -33,7 +41,7 @@ export async function loadSessionUser(userId: string): Promise<SessionUserPayloa
     displayName: buildDisplayName(user.profile?.name, user.profile?.surname, user.email),
     emailVerified: Boolean(user.emailVerified),
     profileComplete,
-    isAdmin: Boolean(user.profile?.isAdmin),
+    isAdmin: shouldBeAdmin,
     countryCode: user.profile?.countryCode ?? null,
   }
 }
@@ -132,6 +140,8 @@ export async function upsertEmailProfile(input: {
 export async function registerEmailUser(input: {
   name: string
   surname: string
+  phone: string
+  birthDate: Date
   email: string
   passwordHash: string
   countryCode: string
@@ -147,6 +157,8 @@ export async function registerEmailUser(input: {
         create: {
           name: input.name,
           surname: input.surname,
+          phone: input.phone,
+          birthDate: input.birthDate,
           countryCode: input.countryCode,
           provider: 'password',
           isAdmin: isAdminEmail(email),

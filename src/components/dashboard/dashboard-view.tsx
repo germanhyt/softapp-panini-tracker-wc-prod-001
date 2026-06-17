@@ -27,8 +27,14 @@ const DASHBOARD_ACTIONS = [
   {
     href: '/mercado',
     icon: '🏪',
-    label: 'Mercado público',
-    hint: 'Repetidas y faltantes',
+    label: 'Mercado Play Bar',
+    hint: 'Catálogo de la empresa',
+  },
+  {
+    href: '/matches',
+    icon: '🤝',
+    label: 'Preparar trueque',
+    hint: 'Reporte y punto de encuentro',
   },
 ] as const
 
@@ -74,7 +80,7 @@ export function DashboardView() {
       <section className="card dashboard-actions">
         <div className="dashboard-actions-header">
           <h3>Acciones rápidas</h3>
-          <p className="muted-small">Gestiona tu álbum, imprime reportes o revisa el mercado comunitario.</p>
+          <p className="muted-small">Gestiona tu álbum, imprime reportes o revisa el catálogo para canje en Play Bar.</p>
         </div>
         <div className="dashboard-actions-grid">
           {DASHBOARD_ACTIONS.map((action) => (

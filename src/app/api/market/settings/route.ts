@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { requireAdminSession } from '@/lib/auth/require-admin'
 import { getUserMarketSettings, updateMarketSettings, type MarketSettingsPatch } from '@/lib/market/service'
 import { notifyMarketUpdated } from '@/lib/realtime/notify-market'
 
@@ -19,9 +19,9 @@ function parseSettingsPatch(body: unknown): MarketSettingsPatch | null {
 }
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { session, error } = await requireAdminSession()
+  if (error || !session?.user?.id) {
+    return error ?? NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
   try {
@@ -34,9 +34,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { session, error } = await requireAdminSession()
+  if (error || !session?.user?.id) {
+    return error ?? NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
   try {

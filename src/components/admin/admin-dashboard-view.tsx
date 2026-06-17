@@ -16,6 +16,10 @@ function formatDate(value: string | null): string {
   return date.toLocaleString()
 }
 
+function formatRole(isAdmin: boolean): string {
+  return isAdmin ? 'Empresa/Admin' : 'Coleccionista'
+}
+
 function initials(name: string, email: string): string {
   return (name || email || 'U').slice(0, 1).toUpperCase()
 }
@@ -62,6 +66,7 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
       (item) =>
         item.fullName.toLowerCase().includes(clean) ||
         item.email.toLowerCase().includes(clean) ||
+        formatRole(item.isAdmin).toLowerCase().includes(clean) ||
         item.provider.toLowerCase().includes(clean) ||
         item.countryName.toLowerCase().includes(clean),
     )
@@ -71,13 +76,10 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
     const headers = [
       'Nombre',
       'Correo',
+      'Rol',
       'Proveedor',
       'Pais',
       'Verificado',
-      'Pegadas',
-      'Faltantes',
-      'Repetidas',
-      'Avance %',
       'Creado',
       'Ultimo ingreso',
     ]
@@ -85,13 +87,10 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
     const rows = filteredUsers.map((item) => [
       item.fullName,
       item.email,
+      formatRole(item.isAdmin),
       item.provider,
       item.countryName,
       item.verified ? 'Si' : 'No',
-      item.stats.owned,
-      item.stats.missing,
-      item.stats.duplicates,
-      item.stats.percent,
       formatDate(item.createdAt),
       formatDate(item.lastLoginAt),
     ])
@@ -111,7 +110,7 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
       <div className="admin-head">
         <div>
           <h2>🛡️ Panel administrador</h2>
-          <p>Vista privada para {adminEmail}. No muestra contraseñas.</p>
+          <p>Vista privada para {adminEmail}. Solo muestra datos de usuarios; no incluye figuritas.</p>
         </div>
         <button type="button" className="btn-refresh-matches" onClick={() => void loadUsers()}>
           🔄 Actualizar
@@ -139,12 +138,12 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
             <span>Registro correo</span>
           </div>
           <div className="admin-stat-card">
-            <strong>{summary.avgProgress}%</strong>
-            <span>Avance promedio</span>
+            <strong>{summary.admins}</strong>
+            <span>Cuentas empresa/admin</span>
           </div>
           <div className="admin-stat-card">
-            <strong>{summary.totalDuplicates}</strong>
-            <span>Repetidas acumuladas</span>
+            <strong>{summary.pendingVerification}</strong>
+            <span>Pendientes de verificación</span>
           </div>
         </div>
       )}
@@ -156,13 +155,13 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
             id="admin-search"
             type="text"
             value={query}
-            placeholder="Nombre, correo, país o proveedor..."
+            placeholder="Nombre, correo, rol, país o proveedor..."
             onChange={(event) => setQuery(event.target.value)}
           />
           <small>{filteredUsers.length} usuario(s) visibles.</small>
         </div>
         <button type="button" className="btn-secondary" onClick={exportCsv} disabled={filteredUsers.length === 0}>
-          ⬇️ Exportar CSV
+          ⬇️ Exportar usuarios CSV
         </button>
       </div>
 
@@ -189,6 +188,7 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
                   <h3>{item.fullName}</h3>
                   <p>{item.email}</p>
                   <div className="admin-tags">
+                    <span>{formatRole(item.isAdmin)}</span>
                     <span>{item.provider}</span>
                     <span>📍 {item.countryName}</span>
                     <span>{item.verified ? 'Verificado' : 'No verificado'}</span>
@@ -197,19 +197,8 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
                 </div>
               </div>
 
-              <div className="admin-progress-box">
-                <strong>{item.stats.percent}%</strong>
-                <small>
-                  {item.stats.owned}/{item.stats.total} pegadas
-                </small>
-                <div className="admin-mini-bar">
-                  <span style={{ width: `${item.stats.percent}%` }} />
-                </div>
-              </div>
-
               <div className="admin-user-stats">
-                <span>❌ {item.stats.missing} faltan</span>
-                <span>🔁 {item.stats.duplicates} repetidas</span>
+                <span>🗓️ Creado: {formatDate(item.createdAt)}</span>
                 <span>🕒 {formatDate(item.lastLoginAt)}</span>
               </div>
             </div>

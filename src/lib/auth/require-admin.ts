@@ -14,3 +14,11 @@ export async function requireAdminSession() {
 
   return { session, error: null }
 }
+
+export async function requireAdminSessionOrThrow() {
+  const { session, error } = await requireAdminSession()
+  if (error || !session) {
+    throw new Error('Forbidden')
+  }
+  return session
+}

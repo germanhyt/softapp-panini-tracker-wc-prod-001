@@ -8,26 +8,34 @@ type BottomNavProps = {
   isAdmin?: boolean
 }
 
-const baseLinks = [
+const adminLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/album', label: 'Álbum', icon: '📖' },
-  { href: '/matches', label: 'Matches', icon: '🤝' },
+  // { href: '/mercado', label: 'Mercado', icon: '🏪' },
+  // { href: '/matches', label: 'Play Bar', icon: '🤝' },
   { href: '/chat', label: 'Chat', icon: '💬' },
+  { href: '/admin', label: 'Admin', icon: '🛡️' },
   { href: '/profile', label: 'Perfil', icon: '👤' },
-  { href: '/extras', label: 'Extras', icon: '📦' },
+  // { href: '/extras', label: 'Extras', icon: '📦' },
+]
+
+const collectorLinks = [
+  { href: '/mercado', label: 'Mercado', icon: '🏪' },
+  { href: '/chat', label: 'Chat', icon: '💬' },
+  { href: '/profile', label: 'Cuenta', icon: '👤' },
 ]
 
 export function BottomNav({ isAdmin = false }: BottomNavProps) {
   const pathname = usePathname()
   const { totalUnread } = useChatUnreadCount()
-  const links = isAdmin
-    ? [...baseLinks.slice(0, 4), { href: '/admin', label: 'Admin', icon: '🛡️' }, baseLinks[4]]
-    : baseLinks
+  const links = isAdmin ? adminLinks : collectorLinks
 
   return (
     <nav className="bottom-nav">
       {links.map((link) => {
-        const active = pathname === link.href || pathname.startsWith(`${link.href}/`)
+        const active =
+          pathname === link.href ||
+          (link.href !== '/mercado' && pathname.startsWith(`${link.href}/`))
         const showUnread = link.href === '/chat' && totalUnread > 0
 
         return (

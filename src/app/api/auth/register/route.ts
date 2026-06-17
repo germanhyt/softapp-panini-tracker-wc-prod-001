@@ -8,6 +8,7 @@ import {
   sendVerificationEmail,
 } from '@/lib/auth/email-verification'
 import { buildRateLimitKey, checkRateLimit, rateLimitResponse } from '@/lib/auth/rate-limit'
+import { normalizePeruPhone, parseBirthDateInput } from '@/lib/auth/profile-fields'
 import { registerEmailUser } from '@/lib/auth/session-user'
 import { normalizeEmail } from '@/lib/auth/users'
 import { getClientIp } from '@/lib/http/client-ip'
@@ -17,6 +18,8 @@ import { APP_COUNTRY_CODE, isAppCountryCode } from '@/lib/domain/countries'
 const registerSchema = z.object({
   name: z.string().trim().min(1, 'Nombre requerido'),
   surname: z.string().trim().min(1, 'Apellido requerido'),
+  phone: z.string().trim().min(1, 'Celular requerido'),
+  birthDate: z.string().trim().min(1, 'Fecha de nacimiento requerida'),
   email: z.string().email('Correo inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
   countryCode: z.string().trim().min(2, 'País requerido'),
@@ -43,8 +46,21 @@ export async function POST(request: Request) {
       )
     }
 
-    const { name, surname, email, password, countryCode } = parsed.data
+    const { name, surname, phone, birthDate, email, password, countryCode } = parsed.data
     const normalizedEmail = normalizeEmail(email)
+    const normalizedPhone = normalizePeruPhone(phone)
+    const parsedBirthDate = parseBirthDateInput(birthDate)
+
+    if (!normalizedPhone) {
+      return NextResponse.json(
+        { error: 'Ingresa un celular válido de Perú con prefijo +51 (ejemplo: +51 912345678)' },
+        { status: 400 },
+      )
+    }
+
+    if (!parsedBirthDate) {
+      return NextResponse.json({ error: 'Ingresa una fecha de nacimiento válida' }, { status: 400 })
+    }
 
     const emailLimit = checkRateLimit({
       key: buildRateLimitKey('register:email', [normalizedEmail]),
@@ -77,6 +93,8 @@ export async function POST(request: Request) {
     await registerEmailUser({
       name,
       surname,
+      phone: normalizedPhone,
+      birthDate: parsedBirthDate,
       email: normalizedEmail,
       passwordHash,
       countryCode: APP_COUNTRY_CODE,

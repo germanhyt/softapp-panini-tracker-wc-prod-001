@@ -61,7 +61,7 @@ export function MarketChatPreviewPanel({ publisherUserId, publisherName }: Marke
         <div className="market-chat-preview-panel">
           <div className="market-chat-preview-head">
             <span className="market-chat-closed-badge">Conversación cerrada</span>
-            <p className="muted-small">Vista previa interna con {publisherName}. No puedes responder desde el mercado.</p>
+            <p className="muted-small">Vista previa con {publisherName}. Para responder, abre el chat interno.</p>
           </div>
 
           {loading ? (
@@ -89,7 +89,7 @@ export function MarketChatPreviewPanel({ publisherUserId, publisherName }: Marke
                 Continuar en chat interno
               </Link>
             ) : (
-              <StartChatButton participantUserId={publisherUserId} label="Iniciar chat interno" />
+              <StartChatButton participantUserId={publisherUserId} label="Escribir a la empresa" />
             )}
           </div>
         </div>

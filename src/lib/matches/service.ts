@@ -1,11 +1,6 @@
 import { prisma } from '@/lib/db/prisma'
 import { getUserSavedStickerMap } from '@/lib/stickers/service'
-import {
-  computeMatch,
-  getDuplicateCodes,
-  getMissingCodes,
-  stickersArrayToMap,
-} from '@/lib/domain/match-engine'
+import { getDuplicateCodes, getMissingCodes } from '@/lib/domain/match-engine'
 
 export type MatchUserPreview = {
   id: string
@@ -54,58 +49,6 @@ export async function findMatchesForUser(userId: string): Promise<MatchesRespons
   const myMissing = getMissingCodes(mySaved)
   const myDuplicateCodes = getDuplicateCodes(mySaved)
 
-  const candidates = await prisma.user.findMany({
-    where: {
-      id: { not: userId },
-      emailVerified: { not: null },
-      profile: {
-        countryCode: profile.countryCode,
-        profileCompletedAt: { not: null },
-      },
-    },
-    select: {
-      id: true,
-      email: true,
-      profile: {
-        select: {
-          name: true,
-          surname: true,
-          photoUrl: true,
-        },
-      },
-      stickers: {
-        select: {
-          stickerCode: true,
-          owned: true,
-          duplicates: true,
-        },
-      },
-    },
-  })
-
-  const matches: MatchResult[] = []
-
-  candidates.forEach((candidate) => {
-    if (!candidate.email || !candidate.profile) return
-
-    const theirStickers = stickersArrayToMap(candidate.stickers)
-    const computed = computeMatch(myMissing, myDuplicateCodes, theirStickers)
-    if (!computed) return
-
-    matches.push({
-      user: {
-        id: candidate.id,
-        name: candidate.profile.name,
-        surname: candidate.profile.surname,
-        photoUrl: candidate.profile.photoUrl,
-        email: candidate.email,
-      },
-      ...computed,
-    })
-  })
-
-  matches.sort((a, b) => b.score - a.score || b.exchangeCount - a.exchangeCount)
-
   return {
     countryCode: profile.countryCode,
     countryRequired: false,
@@ -113,7 +56,7 @@ export async function findMatchesForUser(userId: string): Promise<MatchesRespons
       duplicates: myDuplicateCodes.length,
       missing: myMissing.length,
     },
-    matches,
+    matches: [],
   }
 }
 

@@ -27,14 +27,16 @@ export function StartChatButton({
       })
 
       if (!response.ok) {
-        throw new Error('No se pudo abrir el chat')
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(payload?.error || 'No se pudo abrir el chat')
       }
 
       const payload = (await response.json()) as { conversationId: string }
       router.push(`/chat/${payload.conversationId}`)
     } catch (error) {
       console.error('Start chat error:', error)
-      alert('No se pudo abrir el chat. Intenta nuevamente.')
+      const message = error instanceof Error ? error.message : 'No se pudo abrir el chat. Intenta nuevamente.'
+      alert(message)
     } finally {
       setLoading(false)
     }

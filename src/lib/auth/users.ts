@@ -28,11 +28,15 @@ export function isProfileComplete(profile?: {
   name?: string | null
   surname?: string | null
   countryCode?: string | null
+  phone?: string | null
+  birthDate?: Date | null
 } | null): boolean {
   return Boolean(
     cleanText(profile?.name || '') &&
     cleanText(profile?.surname || '') &&
-    cleanText(profile?.countryCode || ''),
+    cleanText(profile?.countryCode || '') &&
+    cleanText(profile?.phone || '') &&
+    profile?.birthDate,
   )
 }
 

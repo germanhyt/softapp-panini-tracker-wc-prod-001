@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MarketChatPreviewPanel } from '@/components/market/market-chat-preview-panel'
+import { MarketPlayBarIntroModal } from '@/components/market/market-playbar-intro-modal'
 import { teamNames, teams } from '@/lib/domain/catalog'
 import { COUNTRIES } from '@/lib/domain/countries'
+import { MEETING_POINT } from '@/lib/brand'
 import type { ListingType, MarketSearchResponse } from '@/lib/market/service'
 
 type MarketFilters = {
@@ -101,15 +103,20 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
 
   const items = data?.items ?? []
   const pagination = data?.pagination ?? { page: 1, limit: 24, total: 0, totalPages: 0 }
+  const hasFullAccess = isAuthenticated
 
   return (
     <div className="market-page">
+      {!hasFullAccess && <MarketPlayBarIntroModal />}
+
       <section className="card market-hero-card">
-        <p className="market-hero-kicker">Mercado comunitario</p>
-        <h2 className="market-hero-title">Encuentra repetidas y faltantes publicadas</h2>
+        <p className="market-hero-kicker">Catálogo oficial</p>
+        <h2 className="market-hero-title">Figuritas disponibles para intercambio</h2>
         <p className="muted-small">
-          Filtra por país, selección o código para ver qué hay disponible para intercambiar.
-          El chat es interno y privado; aquí solo puedes ver una vista previa cerrada si ya conversaste.
+          Publicado por {MEETING_POINT.venue}.{' '}
+          {!hasFullAccess
+            ? 'Las figuritas se muestran en vista previa. Inicia sesión para desbloquear el detalle y escribirnos.'
+            : 'Puedes escribirnos desde cada publicación para coordinar tu visita a Play Bar.'}
         </p>
       </section>
 
@@ -117,7 +124,7 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
         <div className="market-filters-head">
           <div>
             <h2 className="market-section-title">Filtros</h2>
-            <p className="muted-small">Busca figuritas repetidas o faltantes publicadas por otros coleccionistas.</p>
+            <p className="muted-small">Busca repetidas o faltantes publicadas por {MEETING_POINT.venue}.</p>
           </div>
           <button type="button" className="btn-neutral-small" onClick={resetFilters}>
             Limpiar
@@ -206,17 +213,21 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
       </section>
 
       <section className="market-results-head">
-        <p className="muted-small">
+        <p className="market-results-summary">
           {loading
             ? 'Cargando publicaciones...'
             : `${pagination.total} publicación${pagination.total === 1 ? '' : 'es'} encontrada${pagination.total === 1 ? '' : 's'}`}
         </p>
-        {!isAuthenticated && (
-          <p className="muted-small">
+        {!hasFullAccess && (
+          <p className="market-results-cta">
             <Link href="/login" className="market-inline-link">
               Inicia sesión
             </Link>{' '}
-            para usar el chat interno con otros coleccionistas.
+            o{' '}
+            <Link href="/register" className="market-inline-link">
+              regístrate
+            </Link>{' '}
+            para quitar el difuminado y chatear con {MEETING_POINT.venue}.
           </p>
         )}
       </section>
@@ -227,63 +238,72 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
         <section className="card empty-market-card">
           <h3>Sin publicaciones por ahora</h3>
           <p>No hay figuritas que coincidan con estos filtros. Prueba ampliar la búsqueda o vuelve más tarde.</p>
-          {isAuthenticated ? (
-            <Link href="/profile" className="btn-primary">
-              Publicar desde mi perfil
-            </Link>
-          ) : (
+          {!hasFullAccess && (
             <Link href="/register" className="btn-primary">
-              Crear cuenta y publicar
+              Crear cuenta para ver el catálogo completo
             </Link>
           )}
         </section>
       ) : (
         <div className="market-grid">
           {items.map((item) => (
-            <article key={item.id} className={`market-card market-card-${item.listingType}`}>
-              <div className="market-card-top">
-                <span className={`market-badge market-badge-${item.listingType}`}>{listingLabel(item.listingType)}</span>
-                <span className="muted-small">{formatRelativeDate(item.updatedAt)}</span>
-              </div>
+            <article
+              key={item.id}
+              className={`market-card market-card-${item.listingType} ${hasFullAccess ? '' : 'market-card-locked'}`}
+            >
+              <div className="market-card-body">
+                <div className="market-card-top">
+                  <span className={`market-badge market-badge-${item.listingType}`}>{listingLabel(item.listingType)}</span>
+                  <span className="muted-small">{formatRelativeDate(item.updatedAt)}</span>
+                </div>
 
-              <div className="market-sticker-code">{item.stickerCode}</div>
+                <div className="market-sticker-code">{item.stickerCode}</div>
 
-              <div className="market-card-meta">
-                {item.listingType === 'offer' ? (
-                  <p>
-                    Cantidad: <strong>{item.quantity}</strong>
-                  </p>
-                ) : (
-                  <p>Necesita esta figurita</p>
-                )}
-                {item.teamCode && <p className="muted-small">{teamNames[item.teamCode] || item.teamCode}</p>}
-              </div>
-
-              <div className="market-user-row">
-                <div className="match-avatar">
-                  {item.user.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.user.photoUrl} alt={item.user.displayName} />
+                <div className="market-card-meta">
+                  {item.listingType === 'offer' ? (
+                    <p className="market-card-qty">
+                      Cantidad disponible: <strong>{item.quantity}</strong>
+                    </p>
                   ) : (
-                    initials(item.user.displayName)
+                    <p className="market-card-need">Buscamos esta figurita</p>
                   )}
+                  {item.teamCode && <p className="muted-small">{teamNames[item.teamCode] || item.teamCode}</p>}
                 </div>
-                <div>
-                  <div className="market-user-name">{item.user.displayName}</div>
-                  {item.user.countryName && <div className="muted-small">{item.user.countryName}</div>}
+
+                <div className="market-user-row">
+                  <div className="match-avatar">
+                    {item.user.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.user.photoUrl} alt={item.user.displayName} />
+                    ) : (
+                      initials(item.user.displayName)
+                    )}
+                  </div>
+                  <div>
+                    <div className="market-user-name">{item.user.displayName}</div>
+                    {item.user.countryName && <div className="muted-small">{item.user.countryName}</div>}
+                  </div>
                 </div>
+
+                {hasFullAccess && item.user.publisherUserId ? (
+                  <MarketChatPreviewPanel
+                    publisherUserId={item.user.publisherUserId}
+                    publisherName={item.user.displayName}
+                  />
+                ) : null}
               </div>
 
-              {isAuthenticated && item.user.publisherUserId ? (
-                <MarketChatPreviewPanel
-                  publisherUserId={item.user.publisherUserId}
-                  publisherName={item.user.displayName}
-                />
-              ) : !isAuthenticated ? (
-                <Link href="/login" className="btn-secondary market-contact-link">
-                  Inicia sesión para chat interno
-                </Link>
-              ) : null}
+              {!hasFullAccess && (
+                <div className="market-card-lock-overlay">
+                  <span className="market-card-lock-icon" aria-hidden="true">
+                    🔒
+                  </span>
+                  <p>Inicia sesión para ver el detalle y escribir a la empresa</p>
+                  <Link href="/login" className="btn-primary">
+                    Iniciar sesión
+                  </Link>
+                </div>
+              )}
             </article>
           ))}
         </div>

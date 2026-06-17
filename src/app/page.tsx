@@ -1,5 +1,6 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
+import { getHomeRouteForUser } from '@/lib/auth/home-route'
 
 export default async function HomePage() {
   const session = await auth()
@@ -16,5 +17,5 @@ export default async function HomePage() {
     redirect('/complete-profile')
   }
 
-  redirect('/dashboard')
+  redirect(getHomeRouteForUser(Boolean(session.user.isAdmin)))
 }

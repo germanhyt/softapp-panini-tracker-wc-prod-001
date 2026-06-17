@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { requireAdminSession } from '@/lib/auth/require-admin'
 import {
   getUserMarketSettings,
   searchMarketListings,
@@ -40,9 +41,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { session, error } = await requireAdminSession()
+  if (error || !session?.user?.id) {
+    return error ?? NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
   try {

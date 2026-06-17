@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { auth } from '@/auth'
+import { requireAdminSession } from '@/lib/auth/require-admin'
 import { syncMarketListingsIfPublishing } from '@/lib/market/service'
 import {
   getUserSavedStickerMap,
@@ -19,9 +19,9 @@ const patchSchema = z.object({
 })
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { session, error } = await requireAdminSession()
+  if (error || !session?.user?.id) {
+    return error ?? NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
   const saved = await getUserSavedStickerMap(session.user.id)
@@ -29,9 +29,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { session, error } = await requireAdminSession()
+  if (error || !session?.user?.id) {
+    return error ?? NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
   try {

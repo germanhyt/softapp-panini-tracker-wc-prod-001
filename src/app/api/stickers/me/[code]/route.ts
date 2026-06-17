@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { requireAdminSession } from '@/lib/auth/require-admin'
 import { syncMarketListingsIfPublishing } from '@/lib/market/service'
 import { deleteSavedSticker, getUserSavedStickerMap } from '@/lib/stickers/service'
 import { normalizeStickerCode } from '@/lib/domain/sticker-rules'
@@ -10,9 +10,9 @@ type RouteContext = {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { session, error } = await requireAdminSession()
+  if (error || !session?.user?.id) {
+    return error ?? NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
   const { code } = await context.params
