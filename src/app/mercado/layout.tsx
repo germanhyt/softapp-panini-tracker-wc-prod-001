@@ -17,7 +17,7 @@ export default async function MercadoLayout({ children }: { children: React.Reac
   return (
     <div className="public-shell">
       <header className="public-header brand-header">
-        <BrandLogo size="lg" linked href={homeHref} subtitle="Catálogo para canje en Play Bar" />
+        <BrandLogo size="lg" linked href={homeHref} subtitle="Catálogo para intercambio" />
         <div className="public-header-actions">
           {isAuthenticated ? (
             <>

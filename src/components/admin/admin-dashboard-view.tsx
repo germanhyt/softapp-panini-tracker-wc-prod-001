@@ -20,6 +20,15 @@ function formatRole(isAdmin: boolean): string {
   return isAdmin ? 'Empresa/Admin' : 'Coleccionista'
 }
 
+function formatPhone(phone: string | null): string {
+  if (!phone) return '—'
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 11 && digits.startsWith('51')) {
+    return `+51 ${digits.slice(2)}`
+  }
+  return phone
+}
+
 function initials(name: string, email: string): string {
   return (name || email || 'U').slice(0, 1).toUpperCase()
 }
@@ -66,6 +75,7 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
       (item) =>
         item.fullName.toLowerCase().includes(clean) ||
         item.email.toLowerCase().includes(clean) ||
+        formatPhone(item.phone).toLowerCase().includes(clean) ||
         formatRole(item.isAdmin).toLowerCase().includes(clean) ||
         item.provider.toLowerCase().includes(clean) ||
         item.countryName.toLowerCase().includes(clean),
@@ -77,6 +87,7 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
       'Nombre',
       'Correo',
       'Rol',
+      'Celular',
       'Proveedor',
       'Pais',
       'Verificado',
@@ -88,6 +99,7 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
       item.fullName,
       item.email,
       formatRole(item.isAdmin),
+      formatPhone(item.phone),
       item.provider,
       item.countryName,
       item.verified ? 'Si' : 'No',
@@ -155,7 +167,7 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
             id="admin-search"
             type="text"
             value={query}
-            placeholder="Nombre, correo, rol, país o proveedor..."
+            placeholder="Nombre, correo, celular, rol, país o proveedor..."
             onChange={(event) => setQuery(event.target.value)}
           />
           <small>{filteredUsers.length} usuario(s) visibles.</small>
@@ -187,6 +199,7 @@ export function AdminDashboardView({ adminEmail }: AdminDashboardViewProps) {
                 <div>
                   <h3>{item.fullName}</h3>
                   <p>{item.email}</p>
+                  <p>{formatPhone(item.phone)}</p>
                   <div className="admin-tags">
                     <span>{formatRole(item.isAdmin)}</span>
                     <span>{item.provider}</span>

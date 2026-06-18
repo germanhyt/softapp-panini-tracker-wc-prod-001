@@ -80,7 +80,7 @@ export function DashboardView() {
       <section className="card dashboard-actions">
         <div className="dashboard-actions-header">
           <h3>Acciones rápidas</h3>
-          <p className="muted-small">Gestiona tu álbum, imprime reportes o revisa el catálogo para canje en Play Bar.</p>
+          <p className="muted-small">Gestiona tu álbum, imprime reportes o revisa el catálogo para intercambio.</p>
         </div>
         <div className="dashboard-actions-grid">
           {DASHBOARD_ACTIONS.map((action) => (

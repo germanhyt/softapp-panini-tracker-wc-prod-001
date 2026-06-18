@@ -15,6 +15,7 @@ export type SessionUserPayload = {
   profileComplete: boolean
   isAdmin: boolean
   countryCode: string | null
+  phone: string | null
 }
 
 export async function loadSessionUser(userId: string): Promise<SessionUserPayload | null> {
@@ -43,6 +44,7 @@ export async function loadSessionUser(userId: string): Promise<SessionUserPayloa
     profileComplete,
     isAdmin: shouldBeAdmin,
     countryCode: user.profile?.countryCode ?? null,
+    phone: user.profile?.phone ?? null,
   }
 }
 

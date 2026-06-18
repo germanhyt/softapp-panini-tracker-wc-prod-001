@@ -5,6 +5,7 @@ export type AdminUserRow = {
   id: string
   email: string
   fullName: string
+  phone: string | null
   provider: string
   countryName: string
   verified: boolean
@@ -58,6 +59,7 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
       id: user.id,
       email: user.email,
       fullName: profile ? `${profile.name} ${profile.surname}`.trim() || 'Usuario sin nombre' : 'Usuario sin nombre',
+      phone: profile?.phone ?? null,
       provider: getProviderLabel(profile?.provider),
       countryName: profile?.countryCode ? getCountryName(profile.countryCode) || 'Sin país' : 'Sin país',
       verified: Boolean(user.emailVerified),

@@ -7,12 +7,14 @@ type StartChatButtonProps = {
   participantUserId: string
   label?: string
   className?: string
+  prefillMessage?: string
 }
 
 export function StartChatButton({
   participantUserId,
   label = 'Enviar mensaje',
   className = 'btn-neutral-small',
+  prefillMessage,
 }: StartChatButtonProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -32,7 +34,10 @@ export function StartChatButton({
       }
 
       const payload = (await response.json()) as { conversationId: string }
-      router.push(`/chat/${payload.conversationId}`)
+      const targetPath = prefillMessage?.trim()
+        ? `/chat/${payload.conversationId}?${new URLSearchParams({ prefill: prefillMessage.trim() }).toString()}`
+        : `/chat/${payload.conversationId}`
+      router.push(targetPath)
     } catch (error) {
       console.error('Start chat error:', error)
       const message = error instanceof Error ? error.message : 'No se pudo abrir el chat. Intenta nuevamente.'

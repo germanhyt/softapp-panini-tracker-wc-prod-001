@@ -13,22 +13,28 @@ type MarketPlayBarIntroModalProps = {
 
 export function MarketPlayBarIntroModal({ forceOpen = false }: MarketPlayBarIntroModalProps) {
   const titleId = useId()
-  const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
+  const [open, setOpen] = useState(() => {
+    if (typeof window === 'undefined') {
+      return forceOpen
+    }
     if (forceOpen) {
-      setOpen(true)
-      return
+      return true
     }
     try {
-      const dismissed = window.localStorage.getItem(STORAGE_KEY)
-      if (!dismissed) setOpen(true)
+      return !window.localStorage.getItem(STORAGE_KEY)
     } catch {
-      setOpen(true)
+      return true
     }
-  }, [forceOpen])
+  })
+
+  const dismiss = () => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, '1')
+    } catch {
+      // ignore storage errors
+    }
+    setOpen(false)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -46,16 +52,7 @@ export function MarketPlayBarIntroModal({ forceOpen = false }: MarketPlayBarIntr
     }
   }, [open])
 
-  const dismiss = () => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, '1')
-    } catch {
-      // ignore storage errors
-    }
-    setOpen(false)
-  }
-
-  if (!mounted || !open) return null
+  if (!open || typeof document === 'undefined') return null
 
   return createPortal(
     <div className="market-intro-modal-backdrop" onClick={dismiss} role="presentation">
@@ -69,7 +66,7 @@ export function MarketPlayBarIntroModal({ forceOpen = false }: MarketPlayBarIntr
         <button type="button" className="market-intro-modal-close" onClick={dismiss} aria-label="Cerrar">
           ✕
         </button>
-        <p className="market-hero-kicker">Canje presencial</p>
+        <p className="market-hero-kicker">Intercambio presencial</p>
         <h2 id={titleId} className="market-intro-modal-title">
           Acércate a {MEETING_POINT.label}
         </h2>

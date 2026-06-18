@@ -33,6 +33,7 @@ export type MarketSearchParams = {
   country?: string
   team?: string
   q?: string
+  order?: 'asc' | 'desc'
 }
 
 export type MarketSearchResponse = {
@@ -342,6 +343,7 @@ export async function searchMarketListings(
   const country = params.country?.trim().toUpperCase() || undefined
   const team = params.team?.trim().toUpperCase() || undefined
   const q = params.q?.trim().toUpperCase() || undefined
+  const order = params.order === 'desc' ? 'desc' : 'asc'
 
   if (team && !teams.includes(team as (typeof teams)[number])) {
     return {
@@ -390,7 +392,7 @@ export async function searchMarketListings(
       where,
       skip,
       take: limit,
-      orderBy: [{ updatedAt: 'desc' }, { stickerCode: 'asc' }],
+      orderBy: [{ stickerCode: order }, { updatedAt: 'desc' }],
       select: {
         id: true,
         listingType: true,

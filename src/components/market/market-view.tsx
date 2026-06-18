@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MarketChatPreviewPanel } from '@/components/market/market-chat-preview-panel'
+import Select from 'react-select'
+import { StartChatButton } from '@/components/chat/start-chat-button'
+import { useMarketRealtime } from '@/hooks/use-market-realtime'
 import { MarketPlayBarIntroModal } from '@/components/market/market-playbar-intro-modal'
 import { teamNames, teams } from '@/lib/domain/catalog'
-import { COUNTRIES } from '@/lib/domain/countries'
+import { APP_COUNTRY_CODE, COUNTRIES } from '@/lib/domain/countries'
 import { MEETING_POINT } from '@/lib/brand'
 import type { ListingType, MarketSearchResponse } from '@/lib/market/service'
 
@@ -13,16 +15,28 @@ type MarketFilters = {
   type: ListingType | 'all'
   country: string
   team: string
+  order: 'asc' | 'desc'
   q: string
   page: number
 }
 
 const DEFAULT_FILTERS: MarketFilters = {
   type: 'all',
-  country: '',
+  country: APP_COUNTRY_CODE,
   team: '',
+  order: 'asc',
   q: '',
   page: 1,
+}
+
+type TeamOption = {
+  value: string
+  label: string
+}
+
+type CountryOption = {
+  value: string
+  label: string
 }
 
 function initials(name: string): string {
@@ -43,6 +57,11 @@ function listingLabel(type: ListingType): string {
   return type === 'offer' ? 'Ofrece' : 'Busca'
 }
 
+function buildPrefillMessage(stickerCodes: string[]): string {
+  if (!stickerCodes.length) return ''
+  return `Hola, me interesan estas figuritas: ${stickerCodes.join(', ')}. ¿Siguen disponibles para canje en Play Bar?`
+}
+
 type MarketViewProps = {
   isAuthenticated?: boolean
 }
@@ -50,6 +69,8 @@ type MarketViewProps = {
 export function MarketView({ isAuthenticated = false }: MarketViewProps) {
   const [filters, setFilters] = useState<MarketFilters>(DEFAULT_FILTERS)
   const [draftQuery, setDraftQuery] = useState('')
+  const [selectedStickerCodes, setSelectedStickerCodes] = useState<string[]>([])
+  const [selectionCartOpen, setSelectionCartOpen] = useState(false)
   const [data, setData] = useState<MarketSearchResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -60,25 +81,32 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
     if (filters.type !== 'all') params.set('type', filters.type)
     if (filters.country) params.set('country', filters.country)
     if (filters.team) params.set('team', filters.team)
+    params.set('order', filters.order)
     if (filters.q) params.set('q', filters.q)
     return params.toString()
   }, [filters])
 
-  const loadMarket = useCallback(async () => {
-    setLoading(true)
+  const loadMarket = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true)
+    }
     try {
-      const response = await fetch(`/api/market?${queryString}`)
+      const response = await fetch(`/api/market?${queryString}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Failed to load market')
       const payload = (await response.json()) as MarketSearchResponse
       setData(payload)
     } catch (error) {
       console.error('Error loading market:', error)
-      setData({
-        items: [],
-        pagination: { page: filters.page, limit: 24, total: 0, totalPages: 0 },
-      })
+      if (!options?.silent) {
+        setData({
+          items: [],
+          pagination: { page: filters.page, limit: 24, total: 0, totalPages: 0 },
+        })
+      }
     } finally {
-      setLoading(false)
+      if (!options?.silent) {
+        setLoading(false)
+      }
     }
   }, [filters.page, queryString])
 
@@ -87,6 +115,12 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
       void loadMarket()
     })
   }, [loadMarket])
+
+  useMarketRealtime({
+    onRefresh: () => {
+      void loadMarket({ silent: true })
+    },
+  })
 
   const applyFilters = () => {
     setFilters((prev) => ({
@@ -101,9 +135,55 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
     setFilters(DEFAULT_FILTERS)
   }
 
-  const items = data?.items ?? []
-  const pagination = data?.pagination ?? { page: 1, limit: 24, total: 0, totalPages: 0 }
+  const items = useMemo(() => data?.items ?? [], [data?.items])
+  const pagination = useMemo(
+    () => data?.pagination ?? { page: 1, limit: 24, total: 0, totalPages: 0 },
+    [data?.pagination],
+  )
   const hasFullAccess = isAuthenticated
+  const publisherUserId = useMemo(
+    () => items.find((item) => item.user.publisherUserId)?.user.publisherUserId ?? null,
+    [items],
+  )
+  const prefillMessage = useMemo(
+    () => buildPrefillMessage(selectedStickerCodes),
+    [selectedStickerCodes],
+  )
+  const teamOptions = useMemo<TeamOption[]>(
+    () =>
+      teams.map((team) => ({
+        value: team,
+        label: teamNames[team] || team,
+      })),
+    [],
+  )
+  const selectedTeamOption = useMemo(
+    () => teamOptions.find((option) => option.value === filters.team) ?? null,
+    [filters.team, teamOptions],
+  )
+  const countryOptions = useMemo<CountryOption[]>(
+    () => COUNTRIES.map((country) => ({ value: country.code, label: country.name })),
+    [],
+  )
+  const selectedCountryOption = useMemo(
+    () => countryOptions.find((option) => option.value === filters.country) ?? null,
+    [countryOptions, filters.country],
+  )
+
+  const toggleStickerSelection = (stickerCode: string) => {
+    setSelectedStickerCodes((prev) => {
+      const next = prev.includes(stickerCode) ? prev.filter((code) => code !== stickerCode) : [...prev, stickerCode]
+      if (next.length === 0) {
+        queueMicrotask(() => setSelectionCartOpen(false))
+      }
+      return next
+    })
+  }
+
+  const clearStickerSelection = () => {
+    setSelectedStickerCodes([])
+    setSelectionCartOpen(false)
+  }
 
   return (
     <div className="market-page">
@@ -153,47 +233,162 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
         <div className="market-filters-grid">
           <label className="market-filter-field">
             <span>País</span>
-            <select
-              value={filters.country}
-              onChange={(event) =>
+            <Select<CountryOption, false>
+              options={countryOptions}
+              value={selectedCountryOption}
+              isClearable
+              isSearchable
+              placeholder="Todos"
+              noOptionsMessage={() => 'Sin coincidencias'}
+              onChange={(option) =>
                 setFilters((prev) => ({
                   ...prev,
-                  country: event.target.value,
+                  country: option?.value || '',
                   page: 1,
                 }))
               }
-            >
-              <option value="">Todos</option>
-              {COUNTRIES.map((country) => (
-                <option key={country.code} value={country.code}>
-                  {country.name}
-                </option>
-              ))}
-            </select>
+              styles={{
+                control: (base, state) => ({
+                  ...base,
+                  backgroundColor: 'var(--bg)',
+                  borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
+                  borderRadius: 12,
+                  minHeight: 46,
+                  boxShadow: 'none',
+                  ':hover': { borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)' },
+                }),
+                singleValue: (base) => ({ ...base, color: 'var(--text)' }),
+                input: (base) => ({ ...base, color: 'var(--text)' }),
+                placeholder: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                menu: (base) => ({
+                  ...base,
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isFocused ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                }),
+                dropdownIndicator: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                clearIndicator: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                indicatorSeparator: (base) => ({ ...base, backgroundColor: 'var(--border)' }),
+                menuPortal: (base) => ({ ...base, zIndex: 60 }),
+              }}
+              menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+            />
           </label>
 
           <label className="market-filter-field">
             <span>Selección</span>
-            <select
-              value={filters.team}
-              onChange={(event) =>
+            <Select<TeamOption, false>
+              options={teamOptions}
+              value={selectedTeamOption}
+              isClearable
+              isSearchable
+              placeholder="Todas"
+              noOptionsMessage={() => 'Sin coincidencias'}
+              onChange={(option) =>
                 setFilters((prev) => ({
                   ...prev,
-                  team: event.target.value,
+                  team: option?.value || '',
                   page: 1,
                 }))
               }
-            >
-              <option value="">Todas</option>
-              {teams.map((team) => (
-                <option key={team} value={team}>
-                  {teamNames[team] || team}
-                </option>
-              ))}
-            </select>
+              styles={{
+                control: (base, state) => ({
+                  ...base,
+                  backgroundColor: 'var(--bg)',
+                  borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
+                  borderRadius: 12,
+                  minHeight: 46,
+                  boxShadow: 'none',
+                  ':hover': { borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)' },
+                }),
+                singleValue: (base) => ({ ...base, color: 'var(--text)' }),
+                input: (base) => ({ ...base, color: 'var(--text)' }),
+                placeholder: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                menu: (base) => ({
+                  ...base,
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isFocused ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                }),
+                dropdownIndicator: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                clearIndicator: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                indicatorSeparator: (base) => ({ ...base, backgroundColor: 'var(--border)' }),
+                menuPortal: (base) => ({ ...base, zIndex: 60 }),
+              }}
+              menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+            />
           </label>
 
-          <label className="market-filter-field market-filter-field-wide">
+          <label className="market-filter-field">
+            <span>Orden por código</span>
+            <Select<{ value: 'asc' | 'desc'; label: string }, false>
+              options={[
+                { value: 'asc', label: 'Ascendente (A-Z)' },
+                { value: 'desc', label: 'Descendente (Z-A)' },
+              ]}
+              value={
+                filters.order === 'desc'
+                  ? { value: 'desc', label: 'Descendente (Z-A)' }
+                  : { value: 'asc', label: 'Ascendente (A-Z)' }
+              }
+              isClearable={false}
+              isSearchable={false}
+              onChange={(option) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  order: option?.value || 'asc',
+                  page: 1,
+                }))
+              }
+              styles={{
+                control: (base, state) => ({
+                  ...base,
+                  backgroundColor: 'var(--bg)',
+                  borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
+                  borderRadius: 12,
+                  minHeight: 46,
+                  boxShadow: 'none',
+                  ':hover': { borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)' },
+                }),
+                singleValue: (base) => ({ ...base, color: 'var(--text)' }),
+                input: (base) => ({ ...base, color: 'var(--text)' }),
+                placeholder: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                menu: (base) => ({
+                  ...base,
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isFocused ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                }),
+                dropdownIndicator: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                indicatorSeparator: (base) => ({ ...base, backgroundColor: 'var(--border)' }),
+                menuPortal: (base) => ({ ...base, zIndex: 60 }),
+              }}
+              menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+            />
+          </label>
+
+          <label className="market-filter-field market-filter-field-search">
             <span>Código de figurita</span>
             <div className="market-search-row">
               <input
@@ -270,6 +465,18 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
                   {item.teamCode && <p className="muted-small">{teamNames[item.teamCode] || item.teamCode}</p>}
                 </div>
 
+                {hasFullAccess && item.listingType === 'offer' && (
+                  <button
+                    type="button"
+                    className="btn-neutral-small"
+                    onClick={() => toggleStickerSelection(item.stickerCode)}
+                  >
+                    {selectedStickerCodes.includes(item.stickerCode)
+                      ? 'Quitar de mi consulta'
+                      : 'Agregar a mi consulta'}
+                  </button>
+                )}
+
                 <div className="market-user-row">
                   <div className="match-avatar">
                     {item.user.photoUrl ? (
@@ -285,12 +492,6 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
                   </div>
                 </div>
 
-                {hasFullAccess && item.user.publisherUserId ? (
-                  <MarketChatPreviewPanel
-                    publisherUserId={item.user.publisherUserId}
-                    publisherName={item.user.displayName}
-                  />
-                ) : null}
               </div>
 
               {!hasFullAccess && (
@@ -331,6 +532,48 @@ export function MarketView({ isAuthenticated = false }: MarketViewProps) {
             Siguiente
           </button>
         </nav>
+      )}
+
+      {hasFullAccess && selectedStickerCodes.length > 0 && publisherUserId && (
+        <>
+          <button
+            type="button"
+            className={`market-selection-fab ${selectionCartOpen ? 'is-open' : 'is-pulsing'}`}
+            aria-expanded={selectionCartOpen}
+            aria-controls="market-selection-cart"
+            onClick={() => setSelectionCartOpen((prev) => !prev)}
+          >
+            <span className="market-selection-fab-icon" aria-hidden="true">
+              🏆
+            </span>
+            <span className="market-selection-fab-label">
+              {selectionCartOpen ? 'Ocultar consulta' : 'Abrir consulta'}
+            </span>
+            <span className="market-selection-fab-count">{selectedStickerCodes.length}</span>
+          </button>
+
+          {selectionCartOpen && (
+            <aside id="market-selection-cart" className="market-selection-cart card" aria-live="polite">
+              <div className="market-selection-cart-head">
+                <p className="market-selection-cart-title">Consulta rápida</p>
+                <button type="button" className="btn-neutral-small" onClick={clearStickerSelection}>
+                  Limpiar
+                </button>
+              </div>
+              <p className="muted-small">
+                {selectedStickerCodes.length} figurita{selectedStickerCodes.length === 1 ? '' : 's'} seleccionada
+                {selectedStickerCodes.length === 1 ? '' : 's'}.
+              </p>
+              <p className="market-selection-cart-codes">{selectedStickerCodes.join(', ')}</p>
+              <StartChatButton
+                participantUserId={publisherUserId}
+                label="Chatear con la empresa"
+                className="btn-primary"
+                prefillMessage={prefillMessage}
+              />
+            </aside>
+          )}
+        </>
       )}
     </div>
   )

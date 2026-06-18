@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChatTradeSuggestionPanel } from '@/components/chat/chat-trade-suggestion-panel'
 import { useChatSocket } from '@/hooks/use-chat-socket'
 import { MEETING_POINT } from '@/lib/brand'
@@ -20,9 +21,14 @@ function formatMessageTime(iso: string): string {
 }
 
 export function ChatThreadView({ conversationId, otherUserName }: ChatThreadViewProps) {
+  const searchParams = useSearchParams()
+  const initialDraft = useMemo(() => {
+    const prefill = searchParams.get('prefill')?.trim()
+    return prefill ? prefill.slice(0, 2000) : ''
+  }, [searchParams])
   const { connected, connecting, messages, typingUserId, sendMessage, notifyTyping } =
     useChatSocket(conversationId)
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useState(initialDraft)
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 

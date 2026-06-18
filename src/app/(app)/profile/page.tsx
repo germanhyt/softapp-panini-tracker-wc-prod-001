@@ -9,6 +9,15 @@ import { computeStats, mergeSavedStickers } from '@/lib/domain/progress'
 import { getUserSavedStickerMap } from '@/lib/stickers/service'
 import Link from 'next/link'
 
+function formatPhone(phone?: string | null): string | null {
+  if (!phone) return null
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 11 && digits.startsWith('51')) {
+    return `+51 ${digits.slice(2)}`
+  }
+  return phone
+}
+
 export default async function ProfilePage() {
   const session = await auth()
   const isAdmin = Boolean(session?.user?.isAdmin)
@@ -27,6 +36,7 @@ export default async function ProfilePage() {
             <h3 className="text-lg font-semibold">{user?.displayName}</h3>
             <p className="muted-small">{user?.email}</p>
             <p className="muted-small">📍 {getCountryName(user?.countryCode || APP_COUNTRY_CODE)}</p>
+            {formatPhone(user?.phone) && <p className="muted-small">📱 {formatPhone(user?.phone)}</p>}
             <p className="muted-small">Cuenta empresa · {MEETING_POINT.venue}</p>
           </section>
 
@@ -53,6 +63,7 @@ export default async function ProfilePage() {
           <h3 className="text-lg font-semibold">{user?.displayName}</h3>
           <p className="muted-small">{user?.email}</p>
           <p className="muted-small">📍 {getCountryName(user?.countryCode || APP_COUNTRY_CODE)}</p>
+          {formatPhone(user?.phone) && <p className="muted-small">📱 {formatPhone(user?.phone)}</p>}
           <p className="muted-small">
             Usa el mercado para ver figuritas disponibles y el chat para coordinar tu visita a {MEETING_POINT.label}.
           </p>

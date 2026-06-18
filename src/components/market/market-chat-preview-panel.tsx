@@ -8,6 +8,7 @@ import type { MarketChatPreview } from '@/lib/chat/service'
 type MarketChatPreviewPanelProps = {
   publisherUserId: string
   publisherName: string
+  prefillMessage?: string
 }
 
 function formatMessageTime(iso: string): string {
@@ -19,7 +20,11 @@ function formatMessageTime(iso: string): string {
   })
 }
 
-export function MarketChatPreviewPanel({ publisherUserId, publisherName }: MarketChatPreviewPanelProps) {
+export function MarketChatPreviewPanel({
+  publisherUserId,
+  publisherName,
+  prefillMessage,
+}: MarketChatPreviewPanelProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<MarketChatPreview | null>(null)
@@ -50,6 +55,12 @@ export function MarketChatPreviewPanel({ publisherUserId, publisherName }: Marke
       void loadPreview()
     }
   }
+
+  const chatLink = preview?.conversationId
+    ? prefillMessage?.trim()
+      ? `/chat/${preview.conversationId}?${new URLSearchParams({ prefill: prefillMessage.trim() }).toString()}`
+      : `/chat/${preview.conversationId}`
+    : null
 
   return (
     <div className="market-chat-preview">
@@ -84,12 +95,16 @@ export function MarketChatPreviewPanel({ publisherUserId, publisherName }: Marke
           )}
 
           <div className="market-chat-preview-actions">
-            {preview?.conversationId ? (
-              <Link href={`/chat/${preview.conversationId}`} className="btn-primary">
+            {chatLink ? (
+              <Link href={chatLink} className="btn-primary">
                 Continuar en chat interno
               </Link>
             ) : (
-              <StartChatButton participantUserId={publisherUserId} label="Escribir a la empresa" />
+              <StartChatButton
+                participantUserId={publisherUserId}
+                label="Escribir a la empresa"
+                prefillMessage={prefillMessage}
+              />
             )}
           </div>
         </div>

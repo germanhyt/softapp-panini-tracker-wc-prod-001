@@ -331,3 +331,15 @@ Un coleccionista en Lima recibe una figurita promocional `PEPROMO3` en un sobre 
 ---
 
 *Última actualización: junio 2026*
+
+
+
+
+Observaciones
+- En "Crear cuenta" placeholder en contraseña y permitir visualizar (icon eye), además colocamos el logo de google en "Registrarme con google"
+ 
+- revisamos que hay un retardo en el ingreso a mi cuenta como usuario externo luego del registro, en el momento donde solicita actualizar perfil, luego de presionar "Continuar en Dashboard" sale me aparece bien el mercado ero cuando le doy a cuenta de nuevo me pide actualizar perfil, revisamos ese bug
+- En el perfil del usuario ver su número de celular
+- Permitir al admin también descargar reporte csv con el número de celular de los usuarioS registrados
+
+- En el filtro de selección pordemos usar react-select para que aparte que me muestre la lista también podamos escribir? (el filtro de pais por defecto  perú)

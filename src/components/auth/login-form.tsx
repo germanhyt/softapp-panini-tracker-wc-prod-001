@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -82,16 +82,28 @@ function GoogleIcon() {
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const loginErrorCode = searchParams.get('error')
+  const googleNotRegistered = loginErrorCode === 'GoogleNotRegistered'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(mapLoginError(searchParams.get('error')))
+  const [error, setError] = useState<string | null>(mapLoginError(loginErrorCode))
   const [info, setInfo] = useState<string | null>(() => {
     if (searchParams.get('verified')) return 'Correo verificado. Ya puedes iniciar sesión.'
     if (searchParams.get('reset')) return 'Contraseña actualizada. Ya puedes iniciar sesión.'
     return null
   })
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!googleNotRegistered) return
+
+    const timeout = window.setTimeout(() => {
+      router.replace('/register?google=1&source=google-not-registered')
+    }, 1200)
+
+    return () => window.clearTimeout(timeout)
+  }, [googleNotRegistered, router])
 
   const handleCredentials = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -127,6 +139,12 @@ export function LoginForm() {
     await signIn('google', { callbackUrl: '/' })
   }
 
+  const handleGoogleRegister = async () => {
+    setError(null)
+    document.cookie = 'auth_intent=register; path=/; max-age=300; SameSite=Lax'
+    await signIn('google', { callbackUrl: '/complete-profile' })
+  }
+
   return (
     <AuthShell
       title="Ingresar"
@@ -147,6 +165,16 @@ export function LoginForm() {
     >
       {info && <AuthMessage tone="success">{info}</AuthMessage>}
       {error && <AuthMessage tone="error">{error}</AuthMessage>}
+      {googleNotRegistered && (
+        <button
+          type="button"
+          className="btn-secondary w-full inline-flex items-center justify-center gap-2"
+          onClick={handleGoogleRegister}
+        >
+          <GoogleIcon />
+          <span>Registrarme con Google ahora</span>
+        </button>
+      )}
 
       <form className="space-y-4" onSubmit={handleCredentials}>
         <AuthField label="Correo">

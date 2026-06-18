@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Select from 'react-select'
 import {
   buildAlbumPages,
   filterCodesByQuery,
@@ -45,6 +46,18 @@ export function AlbumView() {
 
   const currentPage = albumPages[currentPageIndex]
   const hasAnyChanges = Object.keys(pendingChanges).length > 0
+  const pageOptions = useMemo(
+    () =>
+      albumPages.map((page, index) => ({
+        value: index,
+        label: `Pág. ${page.albumLabel || padPage(page.number)} · ${page.title.replace(/^[^\wÀ-ÿ]+\s*/, '')}`,
+      })),
+    [albumPages],
+  )
+  const selectedPageOption = useMemo(
+    () => pageOptions.find((option) => option.value === currentPageIndex) ?? null,
+    [currentPageIndex, pageOptions],
+  )
 
   useEffect(() => {
     const params = new URLSearchParams()
@@ -296,18 +309,48 @@ export function AlbumView() {
               >
                 ←
               </button>
-              <select
-                id="album-page-select"
+              <Select<{ value: number; label: string }, false>
+                inputId="album-page-select"
                 className="album-page-select"
-                value={currentPageIndex}
-                onChange={(e) => tryChangePage(Number(e.target.value))}
-              >
-                {albumPages.map((page, index) => (
-                  <option key={page.id} value={index}>
-                    Pág. {page.albumLabel || padPage(page.number)} · {page.title.replace(/^[^\wÀ-ÿ]+\s*/, '')}
-                  </option>
-                ))}
-              </select>
+                options={pageOptions}
+                value={selectedPageOption}
+                isSearchable
+                isClearable={false}
+                onChange={(option) => {
+                  if (!option) return
+                  void tryChangePage(option.value)
+                }}
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    backgroundColor: 'var(--bg)',
+                    borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
+                    borderRadius: 12,
+                    minHeight: 40,
+                    boxShadow: 'none',
+                    minWidth: 0,
+                    ':hover': { borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)' },
+                  }),
+                  singleValue: (base) => ({ ...base, color: 'var(--text)' }),
+                  input: (base) => ({ ...base, color: 'var(--text)' }),
+                  menu: (base) => ({
+                    ...base,
+                    backgroundColor: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    zIndex: 30,
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isFocused ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                  }),
+                  dropdownIndicator: (base) => ({ ...base, color: 'var(--text-secondary)' }),
+                  indicatorSeparator: (base) => ({ ...base, backgroundColor: 'var(--border)' }),
+                }}
+              />
               <button
                 type="button"
                 className="album-page-nav-btn"

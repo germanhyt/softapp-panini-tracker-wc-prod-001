@@ -19,6 +19,9 @@ function parseSearchParams(url: URL): MarketSearchParams {
       ? (typeParam as ListingType | 'all')
       : 'all'
 
+  const orderParam = (url.searchParams.get('order') || '').toLowerCase()
+  const order = orderParam === 'desc' ? 'desc' : 'asc'
+
   return {
     page: Number.isFinite(page) ? page : 1,
     limit: Number.isFinite(limit) ? limit : 24,
@@ -26,6 +29,7 @@ function parseSearchParams(url: URL): MarketSearchParams {
     country: url.searchParams.get('country') || undefined,
     team: url.searchParams.get('team') || undefined,
     q: url.searchParams.get('q') || undefined,
+    order,
   }
 }
 
